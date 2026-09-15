@@ -152,12 +152,16 @@ export const Plugin = {
           action: name,
           resources: parsed.commands.map((command) => command.resource),
           save: parsed.commands.map((command) => command.save),
-          metadata: { command: invocation.command, [ReviewAction.KEY]: action },
+          // Exact invocation for permission hooks such as the external Bash evaluator.
+          metadata: {
+            command: invocation.command,
+            cwd: target.absolute,
+            shell: invocation.shell,
+            [ReviewAction.KEY]: action,
+          },
           sessionID: context.sessionID,
           agent: context.agent,
           source,
-          // Exact invocation for permission hooks such as the external Bash evaluator.
-          metadata: { command: invocation.command, cwd: target.absolute, shell: invocation.shell },
         })
       // Approval can outlive the directory, so validate immediately before spawning.
       const workdir = yield* Environment.typeFollowing(environment.files, target.absolute).pipe(
