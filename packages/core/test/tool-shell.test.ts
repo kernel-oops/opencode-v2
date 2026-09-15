@@ -1288,7 +1288,8 @@ describe("ShellTool", () => {
                   expect(assertions[0]).toMatchObject({ resources: ["echo $((1 + 1))"], save: ["echo *"] })
                   expect(assertions[2]).toMatchObject({ resources: ["pwd"], save: ["pwd *"] })
                   expect(assertions[3]).toMatchObject({ resources: ["pwd"], save: ["pwd *"] })
-                  return assertions.slice()
+                  // Review metadata carries the invocation's working directory, which differs per fixture.
+                  return assertions.map(({ metadata, ...rest }) => rest)
                 }),
               (tmp) => Effect.promise(() => tmp[Symbol.asyncDispose]().then(() => undefined)),
             ),

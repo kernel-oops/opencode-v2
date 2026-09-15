@@ -75,6 +75,7 @@ export interface GlobInput {
   readonly limit: number
   readonly hidden?: boolean
   readonly follow?: boolean
+  /** Do not descend into other filesystems; used with a descriptor-bound search directory. */
   readonly oneFileSystem?: boolean
   readonly signal?: AbortSignal
 }
@@ -87,6 +88,8 @@ export interface GrepInput {
   readonly literal?: boolean
   readonly caseSensitive?: boolean
   readonly limit: number
+  /** Do not descend into other filesystems; used with a descriptor-bound search directory. */
+  readonly oneFileSystem?: boolean
   readonly signal?: AbortSignal
   /** Search an already-open descriptor (as `/proc/self/fd/N`) instead of reopening a pathname. */
   readonly inheritedReadOnlyFds?: ReadonlyArray<InheritedReadOnlyFd>
@@ -274,6 +277,7 @@ const layer = Layer.effect(
             "--no-messages",
             ...(input.literal ? ["--fixed-strings"] : []),
             ...(input.caseSensitive === false ? ["--ignore-case"] : []),
+            ...(input.oneFileSystem ? ["--one-file-system"] : []),
             ...(input.include ? [`--glob=${input.include}`] : []),
             "--glob=!**/.git/**",
             "--",
