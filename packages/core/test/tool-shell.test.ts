@@ -444,6 +444,46 @@ describe("ShellTool scanner permissions", () => {
         }),
       ))
 
+    test(`${scanner}: rm's own path argument is reviewed as an external directory even when shell is broadly allowed`, () =>
+      withScanner(portable, (registry, fixture) =>
+        Effect.gen(function* () {
+          const agents = yield* Agent.Service
+          yield* agents.transform((editor) =>
+            editor.update(toolIdentity.agent, (agent) => {
+              // A broad shell allow alone must not be enough: the external target still needs review.
+              agent.permissions = [{ action: "shell", resource: "*", effect: "allow" }]
+            }),
+          )
+          const victim = path.join(fixture.outside, "victim")
+          yield* Effect.promise(() => Bun.write(victim, "sensitive"))
+          for (const reply of ["reject", "once"] as const) {
+            const permission = yield* Permission.Service
+            const bus = yield* Bus.Service
+            const queue = yield* Queue.unbounded<Permission.Request>()
+            yield* bus.subscribe(Permission.Event.Asked).pipe(
+              Stream.runForEach((event) => Queue.offer(queue, event.data)),
+              Effect.forkScoped({ startImmediately: true }),
+            )
+            const execution = yield* executeTool(
+              registry,
+              call({ command: `rm -f '${victim}'` }, `call-rm-${reply}`),
+            ).pipe(Effect.forkScoped)
+            const request = yield* Queue.take(queue)
+            expect(request).toMatchObject({ action: "external_directory", resources: [path.join(fixture.outside, "*")] })
+            expect(yield* Effect.promise(() => Bun.file(victim).exists())).toBe(true)
+            yield* permission.reply({ requestID: request.id, reply })
+            const exit = yield* Fiber.await(execution)
+            if (reply === "reject") {
+              expect(Exit.isFailure(exit)).toBe(true)
+              expect(yield* Effect.promise(() => Bun.file(victim).exists())).toBe(true)
+              continue
+            }
+            expect(exit).toMatchObject({ _tag: "Success", value: { status: "completed", metadata: { exit: 0 } } })
+            expect(yield* Effect.promise(() => Bun.file(victim).exists())).toBe(false)
+          }
+        }).pipe(Effect.scoped),
+      ))
+
     test(`${scanner}: a numeric symlink operand still reaches outside without an external-directory prompt`, () =>
       withScanner(portable, (registry, fixture) =>
         Effect.gen(function* () {

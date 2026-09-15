@@ -130,6 +130,13 @@ export const Plugin = {
           kind: "directory",
         }),
       )
+      // A mutating command's own path arguments (e.g. `rm -rf <path>`) get the same
+      // external-directory review as a `cd` target, even when the whole-command `shell`
+      // resource below would itself be allowed. The boundary type is auto-detected (existing
+      // file vs directory) rather than assumed, unlike cwd/cd targets above.
+      const paths = yield* Effect.forEach(parsed.paths, (item) =>
+        access.resolve({ path: FileAccess.resolvePath(target.absolute, item) }),
+      )
       // The exact invocation is published for review; a shell command is never attested as effect-free.
       const action = ReviewAction.make({
         identity: name,
@@ -142,9 +149,10 @@ export const Plugin = {
         cwd: target.absolute,
         complete: true,
       })
-      yield* access.authorizeExternal([target, ...directories], context, {
+      yield* access.authorizeExternal([target, ...directories, ...paths], context, {
         command: invocation.command,
         directories: directories.map((directory) => directory.absolute),
+        paths: paths.map((item) => item.absolute),
         [ReviewAction.KEY]: action,
       })
       if (parsed.commands.length > 0)

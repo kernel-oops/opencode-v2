@@ -62,7 +62,7 @@ describe("ShellParse native parity", () => {
     async (command) => {
       expect(ShellScan.scan(command)).toEqual({ kind: "scanned", commands: [] })
       const native = await Effect.runPromise(ShellParse.scanPortable(command, "bash", "/workspace"))
-      expect(native).toEqual({ commands: [], directories: [] })
+      expect(native).toEqual({ commands: [], directories: [], paths: [] })
       expect(await Effect.runPromise(ShellParse.scan(command, "bash", "/workspace"))).toEqual(native)
       expect(await Effect.runPromise(ShellParse.scan(command, "bash", "/workspace", { portable: true }))).toEqual(
         native,
