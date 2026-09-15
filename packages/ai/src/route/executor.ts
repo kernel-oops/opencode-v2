@@ -108,9 +108,10 @@ const decodeProviderBody = Schema.decodeUnknownOption(
 
 const providerMessage = (status: number, body: string | void) => {
   const decoded = body === undefined ? undefined : Option.getOrUndefined(decodeProviderBody(body))
+  const detail = body?.trim().slice(0, 500)
   return (
     [decoded?.error?.message, decoded?.message].find((message) => message?.trim()) ??
-    `Provider request failed with HTTP ${status}`
+    (detail ? `Provider request failed with HTTP ${status}: ${detail}` : `Provider request failed with HTTP ${status}`)
   )
 }
 
