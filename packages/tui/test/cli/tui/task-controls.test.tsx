@@ -5,117 +5,95 @@ import { mkdir } from "node:fs/promises"
 import path from "node:path"
 import { createSignal } from "solid-js"
 import {
-  createTaskPager,
   emergencyStopReady,
-  nativeTaskStatus,
   pausedMessage,
+  publishTaskStatus,
+  runningTasks,
   stopAllAvailable,
-  taskControlClient,
-  taskRunOptions,
+  taskApi,
+  taskBackground,
+  taskBadge,
+  taskOptions,
+  taskStatus,
   TaskControls,
+  type TaskBackground,
   type TaskControlSnapshot,
 } from "../../../src/component/task-controls"
 import { emptyThemeSource, tmpdir } from "../../fixture/fixture"
 import { TestTuiContexts } from "../../fixture/tui-environment"
 import { createTuiResolvedConfig } from "../../fixture/tui-runtime"
 
+const task = (input: Partial<TaskBackground> = {}): TaskBackground => ({
+  sessionID: "child-1",
+  agent: "explore",
+  description: "Review fixtures",
+  status: "running",
+  ...input,
+})
 const snapshot = (input: Partial<TaskControlSnapshot> = {}): TaskControlSnapshot => ({
-  revision: "r1",
-  mode: "active",
-  running: 0,
-  cancelling: 0,
   paused: false,
-  draining: false,
-  stopped: false,
-  hasMore: false,
-  runs: [],
+  active: false,
+  background: [],
   ...input,
 })
 
-test("stop-all availability considers background work, not only the response", () => {
+test("stop-all availability considers active response and running background tasks", () => {
   expect(stopAllAvailable("idle")).toBe(false)
   expect(stopAllAvailable("running")).toBe(true)
-  expect(stopAllAvailable("idle", snapshot({ running: 1 }))).toBe(true)
-  expect(stopAllAvailable("idle", snapshot({ cancelling: 1 }))).toBe(true)
+  expect(stopAllAvailable("idle", snapshot({ active: true }))).toBe(true)
+  expect(stopAllAvailable("idle", snapshot({ background: [task()] }))).toBe(true)
+  expect(stopAllAvailable("idle", snapshot({ background: [task({ status: "completed" })] }))).toBe(false)
+  expect(runningTasks(snapshot({ background: [task(), task({ sessionID: "c2", status: "error" })] }))).toBe(1)
   expect(emergencyStopReady(1)).toBe(false)
   expect(emergencyStopReady(2)).toBe(true)
 })
 
-test("dispatch receipts never become execution status", () => {
-  expect(nativeTaskStatus(undefined)).toBeUndefined()
-  expect(nativeTaskStatus("run-1")).toBe("unobserved")
-  const run = { id: "run-2", childID: "child", status: "completed", background: true, delivery: "handled" } as const
-  expect(nativeTaskStatus("run-1", run)).toBe("unobserved")
-  expect(nativeTaskStatus("run-2", run)).toBe("completed")
+test("badges reflect observed task status only", () => {
+  expect(taskBadge(undefined)).toBeUndefined()
+  expect(taskBadge(task())).toBe("Background")
+  expect(taskBadge(task({ status: "completed" }))).toBe("Completed")
+  expect(taskBadge(task({ status: "error" }))).toBe("Failed")
+  expect(taskBadge(task({ status: "cancelled" }))).toBe("Cancelled")
   expect(pausedMessage(1)).toContain("1 background task ")
   expect(pausedMessage(2)).toContain("2 background tasks ")
 })
 
-test("run options offer cancellation only for running tasks", () => {
-  const calls: string[] = []
-  const options = taskRunOptions(
-    [
-      { id: "a", childID: "child-a", status: "running", background: true, delivery: "pending" },
-      { id: "b", childID: "child-b", status: "completed", background: true, delivery: "handled" },
-    ],
-    { result: (id) => calls.push(`result:${id}`), cancel: (id) => calls.push(`cancel:${id}`) },
+test("shared status store resolves background tasks per parent and child", () => {
+  publishTaskStatus("parent", snapshot({ background: [task(), task({ sessionID: "child-2", status: "cancelled" })] }))
+  expect(taskStatus("parent")?.background.length).toBe(2)
+  expect(taskBackground("parent", "child-2")?.status).toBe("cancelled")
+  expect(taskBackground("parent", "missing")).toBeUndefined()
+  expect(taskBackground("other", "child-1")).toBeUndefined()
+  expect(taskBackground(undefined, "child-1")).toBeUndefined()
+  publishTaskStatus("parent", undefined)
+  expect(taskStatus("parent")).toBeUndefined()
+})
+
+test("task options open the child session", () => {
+  const opened: string[] = []
+  const options = taskOptions([task(), task({ sessionID: "child-2", agent: "build", status: "completed" })], (id) =>
+    opened.push(id),
   )
-  expect(options.map((option) => option.value)).toEqual(["a:result", "a:cancel", "b:result"])
+  expect(options.map((option) => option.title)).toEqual([
+    "Running — explore: Review fixtures",
+    "Completed — build: Review fixtures",
+  ])
   options[1]!.onSelect()
-  options[2]!.onSelect()
-  expect(calls).toEqual(["cancel:a", "result:b"])
+  expect(opened).toEqual(["child-2"])
 })
 
-test("client detection requires every task-control endpoint", () => {
-  expect(taskControlClient(undefined)).toBeUndefined()
-  expect(taskControlClient({ session: { interrupt: async () => ({}) } })).toBeUndefined()
-  const complete = Object.fromEntries(
-    ["taskControl", "stopResponse", "resumeController", "cancelTask", "taskResult", "abort"].map((name) => [
-      name,
-      async () => ({ response: { status: 200 } }),
-    ]),
-  )
-  expect(taskControlClient({ session: complete })).toBeDefined()
-})
-
-test("pager pages forward and back, and recovers from a stale cursor", async () => {
-  const requests: { mode?: string; cursor?: string }[] = []
-  const pages: Record<string, TaskControlSnapshot> = {
-    first: snapshot({ nextCursor: "c2" }),
-    c2: snapshot({ nextCursor: "c3" }),
-    c3: snapshot(),
+test("task api detection requires the generated task group", () => {
+  expect(taskApi({ session: {} } as never)).toBeUndefined()
+  const group = {
+    status: async () => snapshot(),
+    stopResponse: async () => ({}),
+    resume: async () => ({}),
+    stopAll: async () => ({}),
   }
-  let stale = false
-  const client = {
-    taskControl: async (input: { mode?: "active" | "history"; cursor?: string }) => {
-      requests.push({ mode: input.mode, cursor: input.cursor })
-      if (stale && input.cursor) {
-        stale = false
-        return { response: { status: 409 } }
-      }
-      return { data: pages[input.cursor ?? "first"], response: { status: 200 } }
-    },
-  }
-  const published: TaskControlSnapshot[] = []
-  const [sessionID] = createSignal("session-1")
-  const pager = createTaskPager(client as never, () => ({ sessionID: sessionID() }), (value) => published.push(value))
-  await pager.refresh()
-  await pager.navigate("next")
-  await pager.navigate("next")
-  expect(requests.map((request) => request.cursor)).toEqual([undefined, "c2", "c3"])
-  expect(pager.canPrevious()).toBe(true)
-  await pager.navigate("previous")
-  expect(requests.at(-1)?.cursor).toBe("c2")
-  stale = true
-  await pager.navigate("next")
-  expect(requests.slice(-2).map((request) => request.cursor)).toEqual(["c3", undefined])
-  expect(pager.canPrevious()).toBe(false)
-  await pager.navigate("history")
-  expect(requests.at(-1)).toEqual({ mode: "history", cursor: undefined })
-  expect(published.length).toBe(requests.length - 1)
+  expect(taskApi({ session: { task: group } } as never)).toBe(group as never)
 })
 
-test("controls render the paused warning and resume action from a snapshot", async () => {
+test("controls render the paused warning and switch between stop and resume", async () => {
   await using tmp = await tmpdir()
   const root = tmp.path
   const state = path.join(root, "state")
@@ -126,7 +104,7 @@ test("controls render the paused warning and resume action from a snapshot", asy
     import("../../../src/context/theme"),
   ])
   const [current, setCurrent] = createSignal<TaskControlSnapshot | undefined>(
-    snapshot({ paused: true, running: 2, nextCursor: "c2" }),
+    snapshot({ paused: true, background: [task(), task({ sessionID: "child-2" })] }),
   )
   const calls: string[] = []
   const controls = {
@@ -135,8 +113,6 @@ test("controls render the paused warning and resume action from a snapshot", asy
     resume: async () => void calls.push("resume"),
     all: async () => void calls.push("all"),
     tasks: () => void calls.push("tasks"),
-    navigate: async (action: string) => void calls.push(`navigate:${action}`),
-    canPrevious: () => false,
   }
   const app = await testRender(
     () => (
@@ -148,20 +124,21 @@ test("controls render the paused warning and resume action from a snapshot", asy
         </ConfigProvider>
       </TestTuiContexts>
     ),
-    { width: 120, height: 12 },
+    { width: 120, height: 8 },
   )
   try {
     await app.waitForFrame((frame) => frame.includes("Resume controller"))
     const frame = app.captureCharFrame()
     expect(frame).toContain(pausedMessage(2))
     expect(frame).toContain("Stop all work")
-    expect(frame).toContain("Stop response only")
-    expect(frame).toContain("Tasks (2 running, 0 cancelling)")
-    expect(frame).toContain("Next page")
-    expect(frame).not.toContain("Previous page")
-    setCurrent(snapshot({ paused: true, draining: true, running: 2 }))
-    await app.waitForFrame((frame) => frame.includes("Stopping response. Automatic continuation paused."))
-    expect(app.captureCharFrame()).not.toContain("Resume controller")
+    expect(frame).toContain("Background tasks (2 running)")
+    expect(frame).not.toContain("Stop response only")
+    setCurrent(snapshot({ active: true, background: [task({ status: "completed" })] }))
+    await app.waitForFrame((frame) => frame.includes("Stop response only"))
+    const next = app.captureCharFrame()
+    expect(next).not.toContain("Resume controller")
+    expect(next).not.toContain("Response stopped")
+    expect(next).toContain("Background tasks (0 running)")
     setCurrent(undefined)
     await app.waitForFrame((frame) => !frame.includes("Stop all work"))
   } finally {

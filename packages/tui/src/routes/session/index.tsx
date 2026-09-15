@@ -117,6 +117,7 @@ import { createHistoryPrepend } from "./history"
 import { context, use, type PendingAction } from "./render-context"
 import { INLINE_TOOL_ICON_WIDTH, InlineToolRow, ReasoningPart, reasoningContent, TextPart } from "./message-parts"
 import { groupRefs } from "./grouping/session"
+import { taskBackground, taskBadge } from "../../component/task-controls"
 export { InlineToolRow } from "./message-parts"
 
 addDefaultParsers(parsers.parsers)
@@ -3180,11 +3181,15 @@ function WebSearch(props: ToolProps) {
 function Subagent(props: ToolProps) {
   const { navigate } = useRoute()
   const data = useData()
+  const ctx = use()
   const sessionID = createMemo(() => stringValue(props.metadata.sessionID) ?? stringValue(props.metadata.sessionId))
   const description = createMemo(() => stringValue(props.input.description))
   const continuation = createMemo(() => Boolean(stringValue(props.input.sessionID)))
   const model = createMemo(() => subagentModelLabel(stringValue(props.input.model), data.location.model.list()))
+  const task = createMemo(() => taskBackground(ctx.sessionID, sessionID()))
   const isRunning = createMemo(() => {
+    const observed = task()
+    if (observed) return observed.status === "running"
     const id = sessionID()
     return props.part.state.status === "running" || Boolean(id && data.session.status(id) === "running")
   })
@@ -3202,9 +3207,14 @@ function Subagent(props: ToolProps) {
         if (id) navigate({ type: "session", sessionID: id })
       }}
       status={
-        isBackgroundSubagent(props.metadata, props.part.state.status) ? (
-          <StatusBadge>Background</StatusBadge>
-        ) : undefined
+        <Show
+          when={
+            taskBadge(task()) ??
+            (isBackgroundSubagent(props.metadata, props.part.state.status) ? "Background" : undefined)
+          }
+        >
+          {(badge) => <StatusBadge>{badge()}</StatusBadge>}
+        </Show>
       }
     >
       {`${continuation() ? "Continue subagent" : `${Locale.titlecase(stringValue(props.input.agent) ?? stringValue(props.input.subagent_type) ?? "General")} Subagent`} — ${description() ?? "Subagent"}${model() ? ` · ${model()}` : ""}`}
