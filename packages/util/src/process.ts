@@ -26,6 +26,7 @@ export interface RunOptions {
   readonly signal?: AbortSignal
   readonly timeout?: Duration.Input
   readonly stdin?: string | Uint8Array | Stream.Stream<Uint8Array, PlatformError>
+  /** Parent descriptors inherited read-only by the child at fixed child descriptor numbers (>= 3). */
   readonly inheritedReadOnlyFds?: ReadonlyArray<InheritedReadOnlyFd>
 }
 
