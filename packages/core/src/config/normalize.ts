@@ -206,6 +206,8 @@ export function normalize(input: unknown): Result {
     enterprise: Info.fields.enterprise,
     username: Info.fields.username,
     snapshots: Info.fields.snapshots,
+    permission_reviewer: Info.fields.permission_reviewer,
+    bash_permission_evaluator: Info.fields.bash_permission_evaluator,
     media: Info.fields.media,
     tool_output: Info.fields.tool_output,
     websearch: Info.fields.websearch,

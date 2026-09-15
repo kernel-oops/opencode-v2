@@ -5,6 +5,8 @@ import { ephemeral, inventory } from "./event.js"
 import { Permission } from "./permission.js"
 import { AbsolutePath, optional } from "./schema.js"
 import { ConfigAgent } from "./config/agent.js"
+import { ConfigBashPermissionEvaluator } from "./config/bash-permission-evaluator.js"
+import { ConfigPermissionReviewer } from "./config/permission-reviewer.js"
 import { ConfigMedia } from "./config/media.js"
 import { ConfigCompaction } from "./config/compaction.js"
 import { ConfigCommand } from "./config/command.js"
@@ -53,6 +55,12 @@ export class Info extends Schema.Class<Info>("Config.Info")({
   }),
   permissions: Permission.Ruleset.pipe(optional).annotate({
     description: "Ordered tool permission rules applied to agent tool use",
+  }),
+  permission_reviewer: ConfigPermissionReviewer.Info.pipe(optional).annotate({
+    description: "Isolated model review of permission requests that would otherwise ask a human",
+  }),
+  bash_permission_evaluator: ConfigBashPermissionEvaluator.Info.pipe(optional).annotate({
+    description: "External integrity-pinned evaluator for shell permission requests",
   }),
   agents: Schema.Record(Schema.String, ConfigAgent.Info).pipe(optional).annotate({
     description: "Named built-in agent overrides and custom agent definitions",
