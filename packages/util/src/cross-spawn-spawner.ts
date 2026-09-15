@@ -560,21 +560,6 @@ const makeCrossSpawnSpawner = Effect.gen(function* () {
   return make(spawnCommand)
 })
 
-export interface InheritedReadOnlyFd {
-  readonly child: number
-  readonly parent: number
-}
-
-const inheritedReadOnlyFds = new WeakMap<ChildProcess.StandardCommand, ReadonlyArray<InheritedReadOnlyFd>>()
-
-/** Registers parent descriptors to be inherited read-only by the child at fixed descriptor numbers. */
-export function registerInheritedReadOnlyFds(
-  command: ChildProcess.StandardCommand,
-  descriptors: ReadonlyArray<InheritedReadOnlyFd>,
-) {
-  inheritedReadOnlyFds.set(command, descriptors)
-}
-
 const layer: Layer.Layer<ChildProcessSpawner, never, FileSystem.FileSystem | Path.Path> = Layer.effect(
   ChildProcessSpawner,
   makeCrossSpawnSpawner,
