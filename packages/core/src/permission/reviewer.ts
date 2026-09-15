@@ -114,7 +114,11 @@ export const layer = Layer.effect(
         Effect.flatMap((exit) => (Exit.isSuccess(exit) ? Effect.succeed(exit.value) : Effect.failCause(exit.cause))),
       )
       const result: Effect.Effect<AssessmentResult> = joined.pipe(
-        Effect.catchCause(() => Effect.succeed({ failure: "provider" as const })),
+        Effect.catchCause((cause) =>
+          Effect.logWarning("permission reviewer provider failure", { cause: Cause.pretty(cause) }).pipe(
+            Effect.as({ failure: "provider" as const }),
+          ),
+        ),
         Effect.onInterrupt(() => Effect.sync(() => controller.abort())),
         Effect.timeoutOrElse({
           duration: input.timeoutMs ?? REVIEW_TIMEOUT_MS,
