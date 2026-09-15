@@ -1,7 +1,7 @@
 export * as PermissionReviewerAssessment from "./reviewer-assessment.js"
 
 import { LLM, type LLMClientService, type LanguageModel } from "@opencode/ai"
-import { Effect, Exit, Schema } from "effect"
+import { Cause, Effect, Exit, Schema } from "effect"
 
 export const REVIEW_MODEL_ID = "gpt-5.6-luna"
 // Process-global because provider work can outlive the instance that started it. Eight permits
@@ -395,7 +395,10 @@ export const assess = Effect.fn("PermissionReviewerAssessment.assess")(function*
       ...(input.temperature === undefined ? {} : { temperature: input.temperature }),
     },
   }).pipe(Effect.exit)
-  if (Exit.isFailure(response)) return { failure: "provider" as const }
+  if (Exit.isFailure(response)) {
+    yield* Effect.logWarning("permission reviewer provider failure", { cause: Cause.pretty(response.cause) })
+    return { failure: "provider" as const }
+  }
   const value: unknown = response.value.object
   if (Buffer.byteLength(JSON.stringify(value ?? null), "utf8") > MAX_OUTPUT_BYTES) return { failure: "size" as const }
   return validateAssessment(input.policy, value)
