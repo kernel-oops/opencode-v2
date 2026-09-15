@@ -13,6 +13,8 @@ import { Command } from "../command.js"
 import { Config } from "../config.js"
 import { Credential } from "../credential.js"
 import { ConfigAgentPlugin } from "../config/plugin/agent.js"
+import { ConfigBashPermissionEvaluatorPlugin } from "../config/plugin/bash-permission-evaluator.js"
+import { ConfigPermissionReviewerPlugin } from "../config/plugin/permission-reviewer.js"
 import { ConfigCommandPlugin } from "../config/plugin/command.js"
 import { ConfigCompactionPlugin } from "../config/plugin/compaction.js"
 import { ConfigFormatterPlugin } from "../config/plugin/formatter.js"
@@ -52,6 +54,8 @@ import { ModelsDev } from "../models-dev.js"
 import { Mcp } from "../mcp/index.js"
 import { Npm } from "@opencode/util/npm"
 import { Permission } from "../permission.js"
+import { BashPermissionEvaluator } from "../permission/bash-evaluator.js"
+import { PermissionReviewer } from "../permission/reviewer.js"
 import { Reference } from "../reference.js"
 import { WebSearch } from "../websearch.js"
 import { Ripgrep } from "../ripgrep.js"
@@ -126,6 +130,8 @@ const services = [
   Mcp.Service,
   Npm.Service,
   Permission.Service,
+  BashPermissionEvaluator.Service,
+  PermissionReviewer.Service,
   Form.Service,
   ReadToolFileSystem.Service,
   Reference.Service,
@@ -177,6 +183,8 @@ export const requirements = LayerNode.group([
   Mcp.node,
   Npm.node,
   Permission.node,
+  BashPermissionEvaluator.node,
+  PermissionReviewer.node,
   Form.node,
   ReadToolFileSystem.node,
   Reference.node,
@@ -253,6 +261,8 @@ const post = [
   ConfigProviderPlugin.Plugin,
   ConfigWebSearchPlugin.Plugin,
   ConfigPolicyPlugin.Plugin,
+  ConfigBashPermissionEvaluatorPlugin.Plugin,
+  ConfigPermissionReviewerPlugin.Plugin,
 ] as const satisfies readonly InternalPlugin[]
 
 export const list = Effect.fn("PluginInternal.list")(function* () {
