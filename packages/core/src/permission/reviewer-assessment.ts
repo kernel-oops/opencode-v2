@@ -396,7 +396,12 @@ export const assess = Effect.fn("PermissionReviewerAssessment.assess")(function*
     },
   }).pipe(Effect.exit)
   if (Exit.isFailure(response)) {
-    yield* Effect.logWarning("permission reviewer provider failure", { cause: Cause.pretty(response.cause) })
+    const failure = Cause.failureOption(response.cause)
+    const details =
+      failure._tag === "Some" && typeof failure.value === "object" && failure.value !== null
+        ? JSON.stringify(failure.value, Object.getOwnPropertyNames(failure.value)).slice(0, 4000)
+        : undefined
+    yield* Effect.logWarning("permission reviewer provider failure", { cause: Cause.pretty(response.cause), details })
     return { failure: "provider" as const }
   }
   const value: unknown = response.value.object
