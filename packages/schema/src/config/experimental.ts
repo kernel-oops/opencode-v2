@@ -14,4 +14,8 @@ export class Info extends Schema.Class<Info>("ConfigExperimental.Info")({
   policies: ConfigPolicy.Info.pipe(Schema.Array, optional).annotate({
     description: "Ordered policies controlling access to configured resources",
   }),
+  task_continuation_agents: Schema.Array(Schema.String).pipe(optional).annotate({
+    description:
+      "Root agents whose turns triggered by a subagent completion keep their tools. Only `build` and `God` are accepted; any other entry disables continuation for every agent. Default: subagent completion turns are report-only with no tools.",
+  }),
 }) {}

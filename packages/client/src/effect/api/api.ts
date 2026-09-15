@@ -1321,6 +1321,39 @@ export type SessionInterruptOperation<E = never> = (
   input: SessionInterruptInput,
 ) => Effect.Effect<SessionInterruptOutput, E>
 
+export type SessionTaskStatusInput = { readonly sessionID: Session.ID }
+export type SessionTaskStatusOutput = {
+  readonly paused: boolean
+  readonly active: boolean
+  readonly background: ReadonlyArray<{
+    readonly sessionID: Session.ID
+    readonly agent: string
+    readonly description: string
+    readonly status: "running" | "completed" | "error" | "cancelled"
+  }>
+}
+export type SessionTaskStatusOperation<E = never> = (
+  input: SessionTaskStatusInput,
+) => Effect.Effect<SessionTaskStatusOutput, E>
+
+export type SessionTaskStopResponseInput = { readonly sessionID: Session.ID }
+export type SessionTaskStopResponseOutput = { readonly interrupted: boolean; readonly paused: boolean }
+export type SessionTaskStopResponseOperation<E = never> = (
+  input: SessionTaskStopResponseInput,
+) => Effect.Effect<SessionTaskStopResponseOutput, E>
+
+export type SessionTaskResumeInput = { readonly sessionID: Session.ID }
+export type SessionTaskResumeOutput = { readonly resumed: boolean }
+export type SessionTaskResumeOperation<E = never> = (
+  input: SessionTaskResumeInput,
+) => Effect.Effect<SessionTaskResumeOutput, E>
+
+export type SessionTaskStopAllInput = { readonly sessionID: Session.ID }
+export type SessionTaskStopAllOutput = { readonly interrupted: boolean; readonly cancelled: ReadonlyArray<Session.ID> }
+export type SessionTaskStopAllOperation<E = never> = (
+  input: SessionTaskStopAllInput,
+) => Effect.Effect<SessionTaskStopAllOutput, E>
+
 export type SessionBackgroundInput = { readonly sessionID: Session.ID }
 export type SessionBackgroundOutput = void
 export type SessionBackgroundOperation<E = never> = (
@@ -1427,6 +1460,12 @@ export interface SessionApi<E = never> {
   readonly generate: SessionGenerateOperation<E>
   readonly log: SessionLogOperation<E>
   readonly interrupt: SessionInterruptOperation<E>
+  readonly task: {
+    readonly status: SessionTaskStatusOperation<E>
+    readonly stopResponse: SessionTaskStopResponseOperation<E>
+    readonly resume: SessionTaskResumeOperation<E>
+    readonly stopAll: SessionTaskStopAllOperation<E>
+  }
   readonly background: SessionBackgroundOperation<E>
   readonly message: { readonly get: SessionMessageGetOperation<E> }
   readonly form: {

@@ -80,6 +80,14 @@ import type {
   SessionLogOutput,
   SessionInterruptInput,
   SessionInterruptOutput,
+  SessionTaskStatusInput,
+  SessionTaskStatusOutput,
+  SessionTaskStopResponseInput,
+  SessionTaskStopResponseOutput,
+  SessionTaskResumeInput,
+  SessionTaskResumeOutput,
+  SessionTaskStopAllInput,
+  SessionTaskStopAllOutput,
   SessionBackgroundInput,
   SessionBackgroundOutput,
   SessionMessageGetInput,
@@ -956,6 +964,52 @@ export function make(options: ClientOptions) {
           },
           requestOptions,
         ),
+      task: {
+        status: (input: SessionTaskStatusInput, requestOptions?: RequestOptions) =>
+          request<SessionTaskStatusOutput>(
+            {
+              method: "GET",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/task`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        stopResponse: (input: SessionTaskStopResponseInput, requestOptions?: RequestOptions) =>
+          request<SessionTaskStopResponseOutput>(
+            {
+              method: "POST",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/task/stop-response`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        resume: (input: SessionTaskResumeInput, requestOptions?: RequestOptions) =>
+          request<SessionTaskResumeOutput>(
+            {
+              method: "POST",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/task/resume`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        stopAll: (input: SessionTaskStopAllInput, requestOptions?: RequestOptions) =>
+          request<SessionTaskStopAllOutput>(
+            {
+              method: "POST",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/task/stop-all`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+      },
       background: (input: SessionBackgroundInput, requestOptions?: RequestOptions) =>
         request<SessionBackgroundOutput>(
           {

@@ -1,5 +1,6 @@
 import { SessionMessage } from "@opencode/schema/session-message"
 import { SessionInbox } from "@opencode/schema/session-inbox"
+import { SessionTask } from "@opencode/schema/session-task"
 import { PromptInput } from "@opencode/schema/prompt-input"
 import { Session } from "@opencode/schema/session"
 import { SessionStats } from "@opencode/schema/session-stats"
@@ -757,6 +758,70 @@ export const makeSessionGroup = <
             summary: "Interrupt session execution",
             description:
               "Interrupt active execution owned by this OpenCode process. Returns interrupted=true when an active execution was interrupted and false for the idle no-op. When resume=true, execution resumes pending steering input and next-in-line control items (manual compaction, moves) while queued prompts remain parked.",
+          }),
+        ),
+    )
+    .add(
+      HttpApiEndpoint.get("session.task.status", "/api/session/:sessionID/task", {
+        params: { sessionID: Session.ID },
+        success: SessionTask.Status,
+        error: SessionNotFoundError,
+      })
+        .middleware(sessionLocationMiddleware)
+        .annotateMerge(
+          OpenApi.annotations({
+            identifier: "v2.session.task.status",
+            summary: "Task control status",
+            description:
+              "Whether automatic subagent completion delivery is paused for this session, whether it is executing, and the process-local subagent jobs it owns.",
+          }),
+        ),
+    )
+    .add(
+      HttpApiEndpoint.post("session.task.stopResponse", "/api/session/:sessionID/task/stop-response", {
+        params: { sessionID: Session.ID },
+        success: SessionTask.StopResponseResult,
+        error: SessionNotFoundError,
+      })
+        .middleware(sessionLocationMiddleware)
+        .annotateMerge(
+          OpenApi.annotations({
+            identifier: "v2.session.task.stopResponse",
+            summary: "Stop response only",
+            description:
+              "Durably pause automatic subagent completion delivery, then interrupt the current response and its foreground tools. Accepted background subagents keep running; their completions are retained in the inbox until resume or the next human turn.",
+          }),
+        ),
+    )
+    .add(
+      HttpApiEndpoint.post("session.task.resume", "/api/session/:sessionID/task/resume", {
+        params: { sessionID: Session.ID },
+        success: SessionTask.ResumeResult,
+        error: SessionNotFoundError,
+      })
+        .middleware(sessionLocationMiddleware)
+        .annotateMerge(
+          OpenApi.annotations({
+            identifier: "v2.session.task.resume",
+            summary: "Resume controller",
+            description:
+              "Release the completion-delivery pause and wake the session so retained completions are delivered.",
+          }),
+        ),
+    )
+    .add(
+      HttpApiEndpoint.post("session.task.stopAll", "/api/session/:sessionID/task/stop-all", {
+        params: { sessionID: Session.ID },
+        success: SessionTask.StopAllResult,
+        error: SessionNotFoundError,
+      })
+        .middleware(sessionLocationMiddleware)
+        .annotateMerge(
+          OpenApi.annotations({
+            identifier: "v2.session.task.stopAll",
+            summary: "Stop all work",
+            description:
+              "Interrupt the session and cancel every subagent job it owns, recursively, permanently suppressing their completion notifications.",
           }),
         ),
     )

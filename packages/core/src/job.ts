@@ -36,6 +36,7 @@ export type Status = Background["status"]
 
 const decodeBackground = Schema.decodeUnknownResult(Background)
 const backgroundPrefix = "job.background/"
+const pausePrefix = "job.paused/"
 
 export type Info = {
   id: string
@@ -121,6 +122,13 @@ export type BackgroundAllInput = {
   type?: string
 }
 
+export type CancelOptions = {
+  /** Drop the completion notification and durable marker so the parent is never woken by this cancellation. */
+  suppress?: boolean
+}
+
+export type Listed = Info & { recovery?: Recovery }
+
 export interface Interface {
   readonly get: (id: string) => Effect.Effect<Info | undefined>
   readonly start: (input: StartInput) => Effect.Effect<Info>
@@ -128,9 +136,15 @@ export interface Interface {
   readonly block: (input: BlockInput) => Effect.Effect<BlockResult | undefined>
   readonly background: (id: string) => Effect.Effect<Info | undefined>
   readonly backgroundAll: (input: BackgroundAllInput) => Effect.Effect<Info[]>
-  readonly cancel: (id: string) => Effect.Effect<Info | undefined>
+  readonly cancel: (id: string, options?: CancelOptions) => Effect.Effect<Info | undefined>
   readonly pendingBackground: Effect.Effect<readonly Background[]>
   readonly completeBackground: (notificationID: SessionMessage.ID) => Effect.Effect<void>
+  /** Snapshots every process-local job with its recovery record. */
+  readonly list: Effect.Effect<readonly Listed[]>
+  /** Durably pauses completion delivery for a parent Session until `unpause`. */
+  readonly pause: (sessionID: SessionSchema.ID) => Effect.Effect<void>
+  readonly unpause: (sessionID: SessionSchema.ID) => Effect.Effect<void>
+  readonly paused: (sessionID: SessionSchema.ID) => Effect.Effect<boolean>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/Job") {}
@@ -376,7 +390,7 @@ export const make = Effect.gen(function* () {
     return result.map((item) => item.info)
   })
 
-  const cancel: Interface["cancel"] = Effect.fn("Job.cancel")(function* (id) {
+  const cancel: Interface["cancel"] = Effect.fn("Job.cancel")(function* (id, options) {
     const completed_at = yield* Clock.currentTimeMillis
     const result = yield* SynchronizedRef.modifyEffect(
       state.jobs,
@@ -384,6 +398,7 @@ export const make = Effect.gen(function* () {
         const job = jobs.get(id)
         if (!job) return [{}, jobs]
         if (job.info.status !== "running") return [{ info: snapshot(job) }, jobs]
+        const suppress = options?.suppress === true
         const next = {
           ...job,
           blockingSessions: new Map<SessionSchema.ID, number>(),
@@ -391,9 +406,12 @@ export const make = Effect.gen(function* () {
             ...job.info,
             status: "cancelled" as const,
             completed_at,
+            ...(suppress ? { metadata: { ...job.info.metadata, suppressed: true } } : {}),
           },
         }
-        yield* persistBackground(next)
+        // A suppressed cancellation leaves no durable notification for restart recovery to deliver.
+        if (suppress && job.info.notificationID) yield* kv.remove(`${backgroundPrefix}${job.info.notificationID}`)
+        else yield* persistBackground(next)
         return [{ info: snapshot(next), done: job.done, scope: job.scope }, new Map(jobs).set(id, next)]
       }),
     )
@@ -417,6 +435,23 @@ export const make = Effect.gen(function* () {
     kv.remove(`${backgroundPrefix}${notificationID}`),
   )
 
+  const list: Interface["list"] = SynchronizedRef.get(state.jobs).pipe(
+    Effect.map((jobs) =>
+      Array.fromIterable(jobs.values()).map((job) => ({
+        ...snapshot(job),
+        ...(job.recovery ? { recovery: job.recovery } : {}),
+      })),
+    ),
+  )
+
+  const pause: Interface["pause"] = Effect.fn("Job.pause")((sessionID) =>
+    Clock.currentTimeMillis.pipe(Effect.flatMap((at) => kv.set(`${pausePrefix}${sessionID}`, { at }))),
+  )
+  const unpause: Interface["unpause"] = Effect.fn("Job.unpause")((sessionID) => kv.remove(`${pausePrefix}${sessionID}`))
+  const paused: Interface["paused"] = Effect.fn("Job.paused")((sessionID) =>
+    kv.get(`${pausePrefix}${sessionID}`).pipe(Effect.map((value) => value !== undefined)),
+  )
+
   return Service.of({
     get,
     start,
@@ -427,6 +462,10 @@ export const make = Effect.gen(function* () {
     cancel,
     pendingBackground,
     completeBackground,
+    list,
+    pause,
+    unpause,
+    paused,
   })
 })
 

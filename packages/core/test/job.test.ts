@@ -11,6 +11,45 @@ import { testEffect } from "./lib/effect"
 const it = testEffect(AppNodeBuilder.build(LayerNode.group([Job.node, KV.node])))
 
 describe("Job", () => {
+  it.live("durably pauses and unpauses completion delivery per Session", () =>
+    Effect.gen(function* () {
+      const jobs = yield* Job.Service
+      const sessionID = SessionSchema.ID.make("ses_pause_test")
+      expect(yield* jobs.paused(sessionID)).toBe(false)
+      yield* jobs.pause(sessionID)
+      expect(yield* jobs.paused(sessionID)).toBe(true)
+      yield* jobs.unpause(sessionID)
+      expect(yield* jobs.paused(sessionID)).toBe(false)
+    }),
+  )
+
+  it.live("suppressed cancellation drops the durable notification marker and lists recovery", () =>
+    Effect.gen(function* () {
+      const jobs = yield* Job.Service
+      const latch = yield* Deferred.make<void>()
+      const recovery = {
+        kind: "subagent" as const,
+        parentSessionID: SessionSchema.ID.make("ses_parent_suppress"),
+        childSessionID: SessionSchema.ID.make("ses_child_suppress"),
+        agent: "reviewer",
+        description: "suppressed",
+      }
+      const job = yield* jobs.start({
+        id: recovery.childSessionID,
+        type: "subagent",
+        recovery,
+        run: Deferred.await(latch).pipe(Effect.as("done")),
+      })
+      yield* jobs.background(job.id)
+      expect((yield* jobs.pendingBackground).map((item) => item.id)).toContain(job.id)
+      expect((yield* jobs.list).find((item) => item.id === job.id)?.recovery).toEqual(recovery)
+
+      const cancelled = yield* jobs.cancel(job.id, { suppress: true })
+      expect(cancelled).toMatchObject({ status: "cancelled", metadata: { suppressed: true } })
+      expect((yield* jobs.pendingBackground).map((item) => item.id)).not.toContain(job.id)
+    }),
+  )
+
   it.live("tracks process-local work through explicit observation", () =>
     Effect.gen(function* () {
       const jobs = yield* Job.Service

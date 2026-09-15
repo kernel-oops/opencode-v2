@@ -86,6 +86,14 @@ import type {
   SessionLogOutput,
   SessionInterruptInput,
   SessionInterruptOutput,
+  SessionTaskStatusInput,
+  SessionTaskStatusOutput,
+  SessionTaskStopResponseInput,
+  SessionTaskStopResponseOutput,
+  SessionTaskResumeInput,
+  SessionTaskResumeOutput,
+  SessionTaskStopAllInput,
+  SessionTaskStopAllOutput,
   SessionBackgroundInput,
   SessionBackgroundOutput,
   SessionMessageGetInput,
@@ -667,6 +675,28 @@ const EndpointSessionInterrupt = (raw: RawClient["server.session"]) => (input: S
     ),
   )
 
+const EndpointSessionTaskStatus = (raw: RawClient["server.session"]) => (input: SessionTaskStatusInput) =>
+  preserveEffect<SessionTaskStatusOutput>()(
+    raw["session.task.status"]({ params: { sessionID: input["sessionID"] } }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointSessionTaskStopResponse = (raw: RawClient["server.session"]) => (input: SessionTaskStopResponseInput) =>
+  preserveEffect<SessionTaskStopResponseOutput>()(
+    raw["session.task.stopResponse"]({ params: { sessionID: input["sessionID"] } }).pipe(
+      Effect.mapError(mapClientError),
+    ),
+  )
+
+const EndpointSessionTaskResume = (raw: RawClient["server.session"]) => (input: SessionTaskResumeInput) =>
+  preserveEffect<SessionTaskResumeOutput>()(
+    raw["session.task.resume"]({ params: { sessionID: input["sessionID"] } }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointSessionTaskStopAll = (raw: RawClient["server.session"]) => (input: SessionTaskStopAllInput) =>
+  preserveEffect<SessionTaskStopAllOutput>()(
+    raw["session.task.stopAll"]({ params: { sessionID: input["sessionID"] } }).pipe(Effect.mapError(mapClientError)),
+  )
+
 const EndpointSessionBackground = (raw: RawClient["server.session"]) => (input: SessionBackgroundInput) =>
   preserveEffect<SessionBackgroundOutput>()(
     raw["session.background"]({ params: { sessionID: input["sessionID"] } }).pipe(Effect.mapError(mapClientError)),
@@ -780,6 +810,12 @@ const adaptGroupSession = (raw: RawClient["server.session"]) => ({
   generate: EndpointSessionGenerate(raw),
   log: EndpointSessionLog(raw),
   interrupt: EndpointSessionInterrupt(raw),
+  task: {
+    status: EndpointSessionTaskStatus(raw),
+    stopResponse: EndpointSessionTaskStopResponse(raw),
+    resume: EndpointSessionTaskResume(raw),
+    stopAll: EndpointSessionTaskStopAll(raw),
+  },
   background: EndpointSessionBackground(raw),
   message: { get: EndpointSessionMessageGet(raw) },
   form: {

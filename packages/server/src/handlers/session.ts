@@ -1,4 +1,5 @@
 import { Session } from "@opencode/core/session"
+import { SessionTaskControl } from "@opencode/core/session/task-control"
 import { SessionStats } from "@opencode/core/session/stats"
 import { SessionTitle } from "@opencode/core/session/title"
 import { SessionTransfer } from "@opencode/core/session/transfer"
@@ -41,6 +42,7 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
       if (info.sessionID !== sessionID) return yield* missingForm(formID)
       return { form, info }
     })
+    const tasks = yield* SessionTaskControl.Service
     const busySession = (error: Session.BusyError) =>
       new SessionBusyError({
         sessionID: error.sessionID,
@@ -607,6 +609,38 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
         "session.interrupt",
         Effect.fn(function* (ctx) {
           return { interrupted: yield* session.interrupt(ctx.params.sessionID, { resume: ctx.query.resume }) }
+        }),
+      )
+      .handle(
+        "session.task.status",
+        Effect.fn(function* (ctx) {
+          return yield* tasks
+            .status(ctx.params.sessionID)
+            .pipe(Effect.catchTag("Session.NotFoundError", missingSession))
+        }),
+      )
+      .handle(
+        "session.task.stopResponse",
+        Effect.fn(function* (ctx) {
+          return yield* tasks
+            .stopResponse(ctx.params.sessionID)
+            .pipe(Effect.catchTag("Session.NotFoundError", missingSession))
+        }),
+      )
+      .handle(
+        "session.task.resume",
+        Effect.fn(function* (ctx) {
+          return yield* tasks
+            .resume(ctx.params.sessionID)
+            .pipe(Effect.catchTag("Session.NotFoundError", missingSession))
+        }),
+      )
+      .handle(
+        "session.task.stopAll",
+        Effect.fn(function* (ctx) {
+          return yield* tasks
+            .stopAll(ctx.params.sessionID)
+            .pipe(Effect.catchTag("Session.NotFoundError", missingSession))
         }),
       )
       .handle(

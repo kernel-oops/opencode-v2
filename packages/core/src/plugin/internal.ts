@@ -74,6 +74,7 @@ import { ReadToolFileSystem } from "../tool/read-filesystem.js"
 import { ReadTool } from "../tool/plugin/read.js"
 import { ShellTool } from "../tool/plugin/shell.js"
 import { SkillTool } from "../tool/plugin/skill.js"
+import { TaskCallbackPlugin } from "./task-callback.js"
 import { SubagentTool } from "../tool/plugin/subagent.js"
 import { Tool } from "../tool.js"
 import { ToolOutput } from "../tool-output.js"
@@ -227,6 +228,8 @@ const pre = [
   ShellTool.Plugin,
   SkillTool.Plugin,
   SubagentTool.Plugin,
+  // Runs after tool plugins so the report-only guard sees every advertised tool.
+  TaskCallbackPlugin.Plugin,
   WebFetchTool.Plugin,
   WebSearchTool.Plugin,
   WriteTool.Plugin,
