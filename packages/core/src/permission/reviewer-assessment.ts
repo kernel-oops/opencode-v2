@@ -396,7 +396,7 @@ export const assess = Effect.fn("PermissionReviewerAssessment.assess")(function*
     },
   }).pipe(Effect.exit)
   if (Exit.isFailure(response)) {
-    const failure = Cause.failureOption(response.cause)
+    const failure = Cause.findErrorOption(response.cause)
     const details =
       failure._tag === "Some" && typeof failure.value === "object" && failure.value !== null
         ? JSON.stringify(failure.value, Object.getOwnPropertyNames(failure.value)).slice(0, 4000)
