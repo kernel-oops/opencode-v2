@@ -46,6 +46,7 @@ import { useDialog } from "../../ui/dialog"
 import { DialogIntegration } from "../dialog-integration"
 import { useConnected } from "../use-connected"
 import { useToast } from "../../ui/toast"
+import { TaskControls, useTaskControls } from "../task-controls"
 import { createFadeIn } from "../../util/signal"
 import { DialogSkill } from "../dialog-skill"
 import { useConfig } from "../../config"
@@ -208,6 +209,7 @@ export function Prompt(props: PromptProps) {
   const dialog = useDialog()
   const toast = useToast()
   const status = createMemo(() => data.session.status(props.sessionID ?? ""))
+  const taskControls = useTaskControls(() => props.sessionID)
   const history = usePromptHistory()
   const stash = usePromptStash()
   const keymap = Keymap.use()
@@ -1647,6 +1649,7 @@ export function Prompt(props: PromptProps) {
   return (
     <>
       <box ref={(r: BoxRenderable) => (anchor = r)} visible={props.visible !== false} width="100%">
+        <TaskControls controls={taskControls} />
         <box
           width="100%"
           border={["left"]}
