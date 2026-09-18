@@ -200,6 +200,19 @@ export type EventLogSynced = { type: "log.synced"; aggregateID: string; seq?: nu
 
 export type SessionInterruptResponse = { interrupted: boolean }
 
+export type SessionTaskBackground = {
+  sessionID: string
+  agent: string
+  description: string
+  status: "running" | "completed" | "error" | "cancelled"
+}
+
+export type SessionTaskStopResponseResult = { interrupted: boolean; paused: boolean }
+
+export type SessionTaskResumeResult = { resumed: boolean }
+
+export type SessionTaskStopAllResult = { interrupted: boolean; cancelled: Array<string> }
+
 export type FormMetadata = { [x: string]: JsonValue }
 
 export type FormWhen = {
@@ -428,6 +441,26 @@ export type VcsBranchList = Array<string>
 export type WebSearchProvider = { id: string; name: string }
 
 export type WebSearchResult = { url: string; title?: string; content?: string; time: { published?: number } }
+
+export type ConfigPermissionReviewerInfo = {
+  mode: "audit-only" | "enforce"
+  model: string
+  policy?: "conservative-v1" | "obvious-risk-only-v1" | "exceptional-risk-only-v1" | null | null
+  automatic_allow?: "never" | "policy-gated" | null | null
+  temporary_read_allow?: boolean
+  automatic_rewrite?: "never" | "once-per-turn" | null | null
+  retained_authority_fallback?: boolean
+}
+
+export type ConfigBashPermissionEvaluatorDisabled = { mode: "disabled" }
+
+export type ConfigBashPermissionEvaluatorExpected = {
+  implementation: string
+  version: string
+  commit: string
+  protocol: string
+  platform: string
+}
 
 export type McpProtocol = "legacy" | "auto" | "2026-07-28"
 
@@ -1362,6 +1395,8 @@ export type SessionMessageAssistantReasoning1 = {
 
 export type ToolContent1 = ToolTextContent | ToolFileContent1
 
+export type SessionTaskStatus = { paused: boolean; active: boolean; background: Array<SessionTaskBackground> }
+
 export type FormNumberField = {
   key: string
   title?: string
@@ -1662,6 +1697,19 @@ export type WorktreeList = Array<WorktreeDirectory>
 
 export type VcsInfo = { provider?: string; branch: VcsBranch }
 
+export type ConfigBashPermissionEvaluatorActive = {
+  mode: "audit-only" | "permit-only" | "enforce"
+  executable: string
+  policy: string
+  executable_sha256: string
+  policy_sha256: string
+  expected: ConfigBashPermissionEvaluatorExpected
+  timeout_seconds?: number | null | null
+  capacity?: number | null | null
+  max_input_bytes?: number | null | null
+  max_output_bytes?: number | null | null
+}
+
 export type SessionInboxMove = {
   id: string
   sessionID: string
@@ -1902,6 +1950,10 @@ export type ReferenceInfo = {
   source: ReferenceSource
 }
 
+export type ConfigBashPermissionEvaluatorInfo =
+  | ConfigBashPermissionEvaluatorDisabled
+  | ConfigBashPermissionEvaluatorActive
+
 export type AgentInfo = {
   id: string
   name: string
@@ -1968,6 +2020,60 @@ export type SessionCreated = {
   }
 }
 
+export type SessionInboxUser = {
+  id: string
+  sessionID: string
+  time: { created: number }
+  type: "user"
+  payload: SessionInboxUserPayload
+  delivery: SessionInboxDelivery
+}
+
+export type SessionInboxItem =
+  | { type: "user"; payload: SessionInboxUserPayload1; delivery: SessionInboxDelivery }
+  | { type: "synthetic"; payload: SessionInboxSyntheticPayload1; delivery: SessionInboxDelivery }
+  | { type: "compaction"; payload: SessionInboxCompactionPayload; delivery: SessionInboxDelivery }
+  | { type: "move"; payload: SessionInboxMovePayload1; delivery: SessionInboxDelivery }
+
+export type SessionMessageAssistantTool = {
+  type: "tool"
+  id: string
+  name: string
+  executed?: boolean
+  providerState?: SessionMessageProviderState
+  providerResultState?: SessionMessageProviderState
+  state:
+    | SessionMessageToolStateStreaming
+    | SessionMessageToolStateRunning
+    | SessionMessageToolStateCompleted
+    | SessionMessageToolStateError
+  time: { created: number; ran?: number; completed?: number }
+}
+
+export type SessionMessageCompaction =
+  | SessionMessageCompactionRunning
+  | SessionMessageCompactionCompleted
+  | SessionMessageCompactionFailed
+
+export type SessionMessageAssistantTool1 = {
+  type: "tool"
+  id: string
+  name: string
+  executed?: boolean
+  providerState?: SessionMessageProviderState1
+  providerResultState?: SessionMessageProviderState1
+  state:
+    | SessionMessageToolStateStreaming
+    | SessionMessageToolStateRunning1
+    | SessionMessageToolStateCompleted1
+    | SessionMessageToolStateError1
+  time: { created: number; ran?: number; completed?: number }
+}
+
+export type FormFields = [FormField, ...Array<FormField>]
+
+export type FormFields2 = [FormField1, ...Array<FormField1>]
+
 export type ConfigEntry =
   | {
       type: "document"
@@ -1982,6 +2088,8 @@ export type ConfigEntry =
         enterprise?: { url?: string }
         username?: string
         permissions?: PermissionRuleset
+        permission_reviewer?: ConfigPermissionReviewerInfo
+        bash_permission_evaluator?: ConfigBashPermissionEvaluatorInfo
         agents?: {
           [x: string]: {
             model?: string | { providerID: string; model: string; variant?: string }
@@ -2136,64 +2244,11 @@ export type ConfigEntry =
           portable_shell_scanner?: boolean
           subagent_depth?: number
           policies?: Array<{ action: "provider.use" | "permission"; resource: string; effect: "allow" | "deny" }>
+          task_continuation_agents?: Array<string>
         }
       }
     }
   | { type: "directory"; path: string }
-
-export type SessionInboxUser = {
-  id: string
-  sessionID: string
-  time: { created: number }
-  type: "user"
-  payload: SessionInboxUserPayload
-  delivery: SessionInboxDelivery
-}
-
-export type SessionInboxItem =
-  | { type: "user"; payload: SessionInboxUserPayload1; delivery: SessionInboxDelivery }
-  | { type: "synthetic"; payload: SessionInboxSyntheticPayload1; delivery: SessionInboxDelivery }
-  | { type: "compaction"; payload: SessionInboxCompactionPayload; delivery: SessionInboxDelivery }
-  | { type: "move"; payload: SessionInboxMovePayload1; delivery: SessionInboxDelivery }
-
-export type SessionMessageAssistantTool = {
-  type: "tool"
-  id: string
-  name: string
-  executed?: boolean
-  providerState?: SessionMessageProviderState
-  providerResultState?: SessionMessageProviderState
-  state:
-    | SessionMessageToolStateStreaming
-    | SessionMessageToolStateRunning
-    | SessionMessageToolStateCompleted
-    | SessionMessageToolStateError
-  time: { created: number; ran?: number; completed?: number }
-}
-
-export type SessionMessageCompaction =
-  | SessionMessageCompactionRunning
-  | SessionMessageCompactionCompleted
-  | SessionMessageCompactionFailed
-
-export type SessionMessageAssistantTool1 = {
-  type: "tool"
-  id: string
-  name: string
-  executed?: boolean
-  providerState?: SessionMessageProviderState1
-  providerResultState?: SessionMessageProviderState1
-  state:
-    | SessionMessageToolStateStreaming
-    | SessionMessageToolStateRunning1
-    | SessionMessageToolStateCompleted1
-    | SessionMessageToolStateError1
-  time: { created: number; ran?: number; completed?: number }
-}
-
-export type FormFields = [FormField, ...Array<FormField>]
-
-export type FormFields2 = [FormField1, ...Array<FormField1>]
 
 export type SessionsResponse = { data: Array<SessionInfo>; cursor: { previous?: string | null; next?: string | null } }
 
@@ -4439,6 +4494,22 @@ export type SessionInterruptInput = {
 }
 
 export type SessionInterruptOutput = SessionInterruptResponse
+
+export type SessionTaskStatusInput = { readonly sessionID: { readonly sessionID: string }["sessionID"] }
+
+export type SessionTaskStatusOutput = SessionTaskStatus
+
+export type SessionTaskStopResponseInput = { readonly sessionID: { readonly sessionID: string }["sessionID"] }
+
+export type SessionTaskStopResponseOutput = SessionTaskStopResponseResult
+
+export type SessionTaskResumeInput = { readonly sessionID: { readonly sessionID: string }["sessionID"] }
+
+export type SessionTaskResumeOutput = SessionTaskResumeResult
+
+export type SessionTaskStopAllInput = { readonly sessionID: { readonly sessionID: string }["sessionID"] }
+
+export type SessionTaskStopAllOutput = SessionTaskStopAllResult
 
 export type SessionBackgroundInput = { readonly sessionID: { readonly sessionID: string }["sessionID"] }
 

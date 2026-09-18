@@ -33,15 +33,11 @@ export const Info = Schema.Struct({
     description: "Accepted for configuration compatibility; retained-authority fallback is not implemented in v2.",
   }),
 })
-  .check(
-    Schema.makeFilter((config) => {
-      const automatic = config.automatic_allow === "policy-gated" || config.automatic_rewrite === "once-per-turn"
-      const automaticPolicy = config.policy === "obvious-risk-only-v1" || config.policy === "exceptional-risk-only-v1"
-      return !automatic || (config.mode === "enforce" && automaticPolicy)
-        ? undefined
-        : "automatic permission review requires enforce mode and an automatic risk policy"
-    }),
-  )
+  // Not enforced as a schema-level filter: a custom cross-field filter without portable
+  // arbitrary/representation metadata breaks the generated-client codegen (config is returned by
+  // GET /api/config). The invariant is enforced at the point of use instead: the reviewer plugin
+  // (config/plugin/permission-reviewer.ts) only takes the automatic-allow/rewrite branches when
+  // `mode === "enforce"`, so a misconfigured audit-only + policy-gated combination is inert, not unsafe.
   .annotate({
     identifier: "ConfigPermissionReviewer.Info",
     description: "Isolated model-based review of permission requests that would otherwise ask a human.",

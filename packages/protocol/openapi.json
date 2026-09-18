@@ -4067,6 +4067,282 @@
         "summary": "Interrupt session execution"
       }
     },
+    "/api/session/{sessionID}/task": {
+      "get": {
+        "tags": ["session"],
+        "operationId": "v2.session.task.status",
+        "parameters": [
+          {
+            "name": "sessionID",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "pattern": "^ses"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "SessionTask.Status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTask.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SessionNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SessionNotFoundErrorEncoded"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SessionNotFoundErrorEncoded"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "description": "Whether automatic subagent completion delivery is paused for this session, whether it is executing, and the process-local subagent jobs it owns.",
+        "summary": "Task control status"
+      }
+    },
+    "/api/session/{sessionID}/task/stop-response": {
+      "post": {
+        "tags": ["session"],
+        "operationId": "v2.session.task.stopResponse",
+        "parameters": [
+          {
+            "name": "sessionID",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "pattern": "^ses"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "SessionTask.StopResponseResult",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTask.StopResponseResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SessionNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SessionNotFoundErrorEncoded"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SessionNotFoundErrorEncoded"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "description": "Durably pause automatic subagent completion delivery, then interrupt the current response and its foreground tools. Accepted background subagents keep running; their completions are retained in the inbox until resume or the next human turn.",
+        "summary": "Stop response only"
+      }
+    },
+    "/api/session/{sessionID}/task/resume": {
+      "post": {
+        "tags": ["session"],
+        "operationId": "v2.session.task.resume",
+        "parameters": [
+          {
+            "name": "sessionID",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "pattern": "^ses"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "SessionTask.ResumeResult",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTask.ResumeResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SessionNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SessionNotFoundErrorEncoded"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SessionNotFoundErrorEncoded"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "description": "Release the completion-delivery pause and wake the session so retained completions are delivered.",
+        "summary": "Resume controller"
+      }
+    },
+    "/api/session/{sessionID}/task/stop-all": {
+      "post": {
+        "tags": ["session"],
+        "operationId": "v2.session.task.stopAll",
+        "parameters": [
+          {
+            "name": "sessionID",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "pattern": "^ses"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "SessionTask.StopAllResult",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTask.StopAllResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SessionNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SessionNotFoundErrorEncoded"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SessionNotFoundErrorEncoded"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "description": "Interrupt the session and cancel every subagent job it owns, recursively, permanently suppressing their completion notifications.",
+        "summary": "Stop all work"
+      }
+    },
     "/api/session/{sessionID}/background": {
       "post": {
         "tags": ["session"],
@@ -12904,6 +13180,12 @@
           "permissions": {
             "$ref": "#/components/schemas/Permission.Ruleset"
           },
+          "permission_reviewer": {
+            "$ref": "#/components/schemas/ConfigPermissionReviewer.Info"
+          },
+          "bash_permission_evaluator": {
+            "$ref": "#/components/schemas/ConfigBashPermissionEvaluator.Info"
+          },
           "agents": {
             "type": "object",
             "additionalProperties": {
@@ -13161,7 +13443,7 @@
                   "properties": {
                     "action": {
                       "type": "string",
-                      "enum": ["provider.use"]
+                      "enum": ["provider.use", "permission"]
                     },
                     "resource": {
                       "type": "string"
@@ -13173,6 +13455,12 @@
                   },
                   "required": ["action", "resource", "effect"],
                   "additionalProperties": false
+                }
+              },
+              "task_continuation_agents": {
+                "type": "array",
+                "items": {
+                  "type": "string"
                 }
               }
             },
@@ -13482,6 +13770,240 @@
           }
         },
         "required": ["directory"],
+        "additionalProperties": false
+      },
+      "ConfigBashPermissionEvaluator.Active": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["audit-only", "permit-only", "enforce"]
+          },
+          "executable": {
+            "type": "string",
+            "minLength": 1
+          },
+          "policy": {
+            "type": "string",
+            "minLength": 1
+          },
+          "executable_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "Expected SHA-256 of the executable bytes."
+          },
+          "policy_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "Expected SHA-256 of the policy bytes."
+          },
+          "expected": {
+            "$ref": "#/components/schemas/ConfigBashPermissionEvaluator.Expected"
+          },
+          "timeout_seconds": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 30
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_input_bytes": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 262144
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_output_bytes": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 4096
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["mode", "executable", "policy", "executable_sha256", "policy_sha256", "expected"],
+        "additionalProperties": false
+      },
+      "ConfigBashPermissionEvaluator.Disabled": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["disabled"]
+          }
+        },
+        "required": ["mode"],
+        "additionalProperties": false
+      },
+      "ConfigBashPermissionEvaluator.Expected": {
+        "type": "object",
+        "properties": {
+          "implementation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "commit": {
+            "type": "string",
+            "minLength": 1
+          },
+          "protocol": {
+            "type": "string",
+            "minLength": 1
+          },
+          "platform": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["implementation", "version", "commit", "protocol", "platform"],
+        "additionalProperties": false,
+        "description": "Identity the executable must report from --version-json."
+      },
+      "ConfigBashPermissionEvaluator.Info": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ConfigBashPermissionEvaluator.Disabled"
+          },
+          {
+            "$ref": "#/components/schemas/ConfigBashPermissionEvaluator.Active"
+          }
+        ],
+        "description": "External, integrity-pinned evaluator consulted for shell commands that would otherwise ask a human. It may permit an ask; in enforce mode it may also deny."
+      },
+      "ConfigPermissionReviewer.Info": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["audit-only", "enforce"],
+            "description": "Reviewer mode. \"audit-only\" logs assessments; \"enforce\" lets assessments change the outcome."
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Reviewer model reference in provider/model form. The model is called directly without a session."
+          },
+          "policy": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["conservative-v1", "obvious-risk-only-v1", "exceptional-risk-only-v1"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "automatic_allow": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["never", "policy-gated"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "temporary_read_allow": {
+            "type": "boolean"
+          },
+          "automatic_rewrite": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["never", "once-per-turn"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retained_authority_fallback": {
+            "type": "boolean"
+          }
+        },
+        "required": ["mode", "model"],
         "additionalProperties": false
       },
       "ConfigShell.Option": {
@@ -18458,6 +18980,91 @@
             "additionalProperties": false
           }
         ]
+      },
+      "SessionTask.Background": {
+        "type": "object",
+        "properties": {
+          "sessionID": {
+            "type": "string",
+            "pattern": "^ses"
+          },
+          "agent": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["running", "completed", "error", "cancelled"]
+          }
+        },
+        "required": ["sessionID", "agent", "description", "status"],
+        "additionalProperties": false
+      },
+      "SessionTask.ResumeResult": {
+        "type": "object",
+        "properties": {
+          "resumed": {
+            "type": "boolean",
+            "description": "Whether a pause was released."
+          }
+        },
+        "required": ["resumed"],
+        "additionalProperties": false
+      },
+      "SessionTask.Status": {
+        "type": "object",
+        "properties": {
+          "paused": {
+            "type": "boolean",
+            "description": "Automatic subagent completion delivery is paused; completions are retained in the inbox."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "The Session has an execution owned by this process."
+          },
+          "background": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionTask.Background"
+            },
+            "description": "Process-local subagent jobs owned by this Session."
+          }
+        },
+        "required": ["paused", "active", "background"],
+        "additionalProperties": false
+      },
+      "SessionTask.StopAllResult": {
+        "type": "object",
+        "properties": {
+          "interrupted": {
+            "type": "boolean"
+          },
+          "cancelled": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^ses"
+            },
+            "description": "Child Sessions whose jobs were cancelled and suppressed."
+          }
+        },
+        "required": ["interrupted", "cancelled"],
+        "additionalProperties": false
+      },
+      "SessionTask.StopResponseResult": {
+        "type": "object",
+        "properties": {
+          "interrupted": {
+            "type": "boolean"
+          },
+          "paused": {
+            "type": "boolean"
+          }
+        },
+        "required": ["interrupted", "paused"],
+        "additionalProperties": false
       },
       "SessionTransfer.Data": {
         "type": "object",

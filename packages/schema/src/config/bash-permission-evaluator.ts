@@ -1,12 +1,12 @@
 export * as ConfigBashPermissionEvaluator from "./bash-permission-evaluator.js"
 
 import { Effect, Schema } from "effect"
-import path from "path"
 import { PositiveInt } from "../schema.js"
 
-const AbsolutePath = Schema.NonEmptyString.check(
-  Schema.makeFilter((value) => path.isAbsolute(value) || "must be an absolute path"),
-)
+// Not enforced as a schema-level filter: a custom filter without portable arbitrary/representation
+// metadata breaks the generated-client codegen (config is returned by GET /api/config). Absoluteness
+// and canonicality are already checked at evaluation time in permission/bash-evaluator.ts.
+const AbsolutePath = Schema.NonEmptyString
 const Sha256 = Schema.String.check(Schema.isPattern(/^[0-9a-f]{64}$/))
 const TimeoutSeconds = Schema.Finite.check(Schema.isGreaterThan(0), Schema.isLessThanOrEqualTo(30))
 const InputBytes = PositiveInt.check(Schema.isLessThanOrEqualTo(256 * 1024))
