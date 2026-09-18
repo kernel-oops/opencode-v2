@@ -4,7 +4,7 @@ import { realpath, stat } from "node:fs/promises"
 import path from "node:path"
 import { Effect } from "effect"
 import type { FileAccess } from "../../file-access.js"
-import { BoundExternalFile } from "./external-file.js"
+import { BoundExternalFile } from "@opencode/util/bound/external-file"
 
 export type Kind = "file" | "directory"
 export type Tool = "read" | "grep" | "glob"

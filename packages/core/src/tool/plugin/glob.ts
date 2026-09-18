@@ -12,8 +12,8 @@ import { Ripgrep } from "../../ripgrep.js"
 import { RelativePath } from "../../schema.js"
 import { Permission } from "../../permission.js"
 import { BoundExternal } from "../bound/external.js"
-import { BoundSearchDirectory } from "../bound/search-directory.js"
-import { ReviewAction } from "../bound/review-action.js"
+import { BoundSearchDirectory } from "@opencode/util/bound/search-directory"
+import { ReviewAction } from "@opencode/util/bound/review-action"
 
 export const name = "glob"
 

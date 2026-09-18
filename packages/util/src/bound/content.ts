@@ -1,8 +1,7 @@
 export * as BoundContent from "./content.js"
 
 import path from "node:path"
-import { Mime } from "../../mime.js"
-import { MEDIA_MIMES } from "../read-filesystem.js"
+import { MediaSniff } from "./media-sniff.js"
 
 const BINARY_EXTENSIONS = new Set([
   ".zip",
@@ -37,7 +36,7 @@ const BINARY_EXTENSIONS = new Set([
 
 /** Media the read tool would present natively rather than as text; never bound as text. */
 export function isAttachmentContent(bytes: Uint8Array) {
-  return MEDIA_MIMES.has(Mime.detect(bytes))
+  return MediaSniff.MEDIA_MIMES.has(MediaSniff.detect(bytes))
 }
 
 export function isBinaryContent(bytes: Uint8Array) {
