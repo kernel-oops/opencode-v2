@@ -16,6 +16,10 @@ export class Info extends Schema.Class<Info>("ConfigExperimental.Info")({
   }),
   task_continuation_agents: Schema.Array(Schema.String).pipe(optional).annotate({
     description:
-      "Root agents whose turns triggered by a subagent completion keep their tools. Only `build` and `God` are accepted; any other entry disables continuation for every agent. Default: subagent completion turns are report-only with no tools.",
+      "Root agents whose turns triggered by a subagent completion keep their tools. Every entry must also appear in `task_continuation_eligible` (default: just `build`); any entry outside that set disables continuation for every agent. Default: subagent completion turns are report-only with no tools.",
+  }),
+  task_continuation_eligible: Schema.Array(Schema.String).pipe(optional).annotate({
+    description:
+      "Agent names that may be granted continuation via `task_continuation_agents`. Defaults to `[\"build\"]`. This is a fail-closed guard: listing a custom root agent here, then in `task_continuation_agents`, is how you opt it in.",
   }),
 }) {}

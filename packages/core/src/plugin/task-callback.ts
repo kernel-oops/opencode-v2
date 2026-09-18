@@ -6,8 +6,12 @@ import { Config } from "../config.js"
 import { Session } from "../session.js"
 import type { SessionMessage } from "../session/message.js"
 
-/** Root agents that may keep their tools on a turn triggered by a subagent completion. */
-const ELIGIBLE = new Set(["build", "God"])
+/**
+ * Root agents that may keep their tools on a turn triggered by a subagent completion, when
+ * `experimental.task_continuation_eligible` is not configured. `build` is OpenCode's own
+ * stock primary agent, not a deployment-specific choice.
+ */
+const DEFAULT_ELIGIBLE = ["build"]
 const HISTORY_WINDOW = 64
 
 export const REPORT_ONLY_GUIDANCE = [
@@ -17,13 +21,17 @@ export const REPORT_ONLY_GUIDANCE = [
 ].join(" ")
 
 /**
- * Parses the continuation allowlist. Unknown, empty or wildcard entries disable the
- * whole policy: a misconfigured allowlist must fail to report-only, never to open tools.
+ * Parses the continuation allowlist against the configured eligible set. Unknown, empty or
+ * wildcard entries disable the whole policy: a misconfigured allowlist must fail to
+ * report-only, never to open tools.
  */
-export function continuationAgents(entries: ReadonlyArray<string> | undefined): ReadonlySet<string> {
+export function continuationAgents(
+  entries: ReadonlyArray<string> | undefined,
+  eligible: ReadonlySet<string>,
+): ReadonlySet<string> {
   if (!entries) return new Set()
   const cleaned = entries.map((entry) => entry.trim())
-  if (cleaned.length === 0 || cleaned.some((entry) => !ELIGIBLE.has(entry))) return new Set()
+  if (cleaned.length === 0 || cleaned.some((entry) => !eligible.has(entry))) return new Set()
   return new Set(cleaned)
 }
 
@@ -58,9 +66,11 @@ export const Plugin = define({
           .pipe(Effect.orElseSucceed(() => []))
         if (!isCallbackTurn(recent)) return
         const session = yield* sessions.get(event.sessionID).pipe(Effect.orElseSucceed(() => undefined))
-        const configured = Config.latest(yield* config.entries(), "experimental")?.task_continuation_agents
+        const experimental = Config.latest(yield* config.entries(), "experimental")
+        const eligible = new Set(experimental?.task_continuation_eligible ?? DEFAULT_ELIGIBLE)
         const allowed = continuationAgents(
-          configured ?? parseEnvironment(process.env.OPENCODE_TASK_CONTINUATION_AGENTS),
+          experimental?.task_continuation_agents ?? parseEnvironment(process.env.OPENCODE_TASK_CONTINUATION_AGENTS),
+          eligible,
         )
         // Only a root controller may continue; nested controllers stay report-only.
         if (session && session.parentID === undefined && allowed.has(event.agent)) return

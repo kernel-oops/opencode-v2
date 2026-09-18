@@ -21,21 +21,33 @@ describe("TaskCallbackPlugin", () => {
     expect(TaskCallbackPlugin.isCallbackTurn([])).toBe(false)
   })
 
-  test("accepts only the exact build and God entries", () => {
-    expect([...TaskCallbackPlugin.continuationAgents(["build", "God"])]).toEqual(["build", "God"])
-    expect([...TaskCallbackPlugin.continuationAgents([" build "])]).toEqual(["build"])
-    expect(TaskCallbackPlugin.continuationAgents(["build", "god"]).size).toBe(0)
-    expect(TaskCallbackPlugin.continuationAgents(["*"]).size).toBe(0)
-    expect(TaskCallbackPlugin.continuationAgents(["build", ""]).size).toBe(0)
-    expect(TaskCallbackPlugin.continuationAgents([]).size).toBe(0)
-    expect(TaskCallbackPlugin.continuationAgents(undefined).size).toBe(0)
-    expect([...TaskCallbackPlugin.continuationAgents(TaskCallbackPlugin.parseEnvironment("build,God"))]).toEqual([
+  test("accepts only entries in the eligible set", () => {
+    const eligible = new Set(["build", "custom-root"])
+    expect([...TaskCallbackPlugin.continuationAgents(["build", "custom-root"], eligible)]).toEqual([
       "build",
-      "God",
+      "custom-root",
     ])
+    expect([...TaskCallbackPlugin.continuationAgents([" build "], eligible)]).toEqual(["build"])
+    expect(TaskCallbackPlugin.continuationAgents(["build", "Custom-Root"], eligible).size).toBe(0)
+    expect(TaskCallbackPlugin.continuationAgents(["*"], eligible).size).toBe(0)
+    expect(TaskCallbackPlugin.continuationAgents(["build", ""], eligible).size).toBe(0)
+    expect(TaskCallbackPlugin.continuationAgents([], eligible).size).toBe(0)
+    expect(TaskCallbackPlugin.continuationAgents(undefined, eligible).size).toBe(0)
+    // An entry outside the eligible set disables the whole policy, even alongside a valid one.
+    expect(TaskCallbackPlugin.continuationAgents(["build", "not-eligible"], eligible).size).toBe(0)
+    expect([
+      ...TaskCallbackPlugin.continuationAgents(TaskCallbackPlugin.parseEnvironment("build,custom-root"), eligible),
+    ]).toEqual(["build", "custom-root"])
   })
 
-  const run = (input: { messages: unknown[]; parentID?: string; agent: string; configured?: string[]; env?: string }) =>
+  const run = (input: {
+    messages: unknown[]
+    parentID?: string
+    agent: string
+    configured?: string[]
+    eligible?: string[]
+    env?: string
+  }) =>
     Effect.gen(function* () {
       const previous = process.env.OPENCODE_TASK_CONTINUATION_AGENTS
       if (input.env === undefined) delete process.env.OPENCODE_TASK_CONTINUATION_AGENTS
@@ -64,7 +76,17 @@ describe("TaskCallbackPlugin", () => {
             entries: () =>
               Effect.succeed(
                 input.configured
-                  ? [{ type: "document", info: { experimental: { task_continuation_agents: input.configured } } }]
+                  ? [
+                      {
+                        type: "document",
+                        info: {
+                          experimental: {
+                            task_continuation_agents: input.configured,
+                            ...(input.eligible ? { task_continuation_eligible: input.eligible } : {}),
+                          },
+                        },
+                      },
+                    ]
                   : [],
               ),
           } as unknown as Config.Interface),
@@ -98,20 +120,42 @@ describe("TaskCallbackPlugin", () => {
   })
 
   test("keeps tools for an allowlisted root controller only", async () => {
-    const allowed = await run({ messages: [synthetic("subagent")], agent: "build", configured: ["build", "God"] })
+    const eligible = ["build", "custom-root"]
+    const allowed = await run({
+      messages: [synthetic("subagent")],
+      agent: "build",
+      configured: ["build", "custom-root"],
+      eligible,
+    })
     expect(Object.keys(allowed.tools)).toEqual(["read", "subagent"])
-    const other = await run({ messages: [synthetic("subagent")], agent: "plan", configured: ["build", "God"] })
+    const other = await run({
+      messages: [synthetic("subagent")],
+      agent: "plan",
+      configured: ["build", "custom-root"],
+      eligible,
+    })
     expect(Object.keys(other.tools)).toEqual([])
     const nested = await run({
       messages: [synthetic("subagent")],
       agent: "build",
       parentID: "ses_root",
-      configured: ["build", "God"],
+      configured: ["build", "custom-root"],
+      eligible,
     })
     expect(Object.keys(nested.tools)).toEqual([])
-    const misconfigured = await run({ messages: [synthetic("subagent")], agent: "build", configured: ["build", "*"] })
+    const misconfigured = await run({
+      messages: [synthetic("subagent")],
+      agent: "build",
+      configured: ["build", "*"],
+      eligible,
+    })
     expect(Object.keys(misconfigured.tools)).toEqual([])
-    const env = await run({ messages: [synthetic("subagent")], agent: "God", env: "build,God" })
+    // A configured entry outside the eligible set (here, the default ["build"] since no
+    // config document is supplied for the env-var path) disables the whole policy...
+    const envDisabled = await run({ messages: [synthetic("subagent")], agent: "custom-root", env: "build,custom-root" })
+    expect(Object.keys(envDisabled.tools)).toEqual([])
+    // ...while an entry the default eligible set does accept still works via the env var.
+    const env = await run({ messages: [synthetic("subagent")], agent: "build", env: "build" })
     expect(Object.keys(env.tools)).toEqual(["read", "subagent"])
   })
 })

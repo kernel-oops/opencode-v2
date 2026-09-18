@@ -2152,6 +2152,7 @@ export type ConfigEntry =
           subagent_depth?: number
           policies?: Array<{ action: "provider.use" | "permission"; resource: string; effect: "allow" | "deny" }>
           task_continuation_agents?: Array<string>
+          task_continuation_eligible?: Array<string>
         }
       }
     }
