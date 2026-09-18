@@ -13180,9 +13180,6 @@
           "permissions": {
             "$ref": "#/components/schemas/Permission.Ruleset"
           },
-          "permission_reviewer": {
-            "$ref": "#/components/schemas/ConfigPermissionReviewer.Info"
-          },
           "agents": {
             "type": "object",
             "additionalProperties": {
@@ -13768,84 +13765,6 @@
         },
         "required": ["directory"],
         "additionalProperties": false
-      },
-      "ConfigPermissionReviewer.Info": {
-        "type": "object",
-        "properties": {
-          "mode": {
-            "type": "string",
-            "enum": ["audit-only", "enforce"],
-            "description": "Reviewer mode. \"audit-only\" logs assessments; \"enforce\" lets assessments change the outcome."
-          },
-          "model": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Reviewer model reference in provider/model form. The model is called directly without a session."
-          },
-          "policy": {
-            "anyOf": [
-              {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": ["conservative-v1", "obvious-risk-only-v1", "exceptional-risk-only-v1"]
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "automatic_allow": {
-            "anyOf": [
-              {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": ["never", "policy-gated"]
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "temporary_read_allow": {
-            "type": "boolean"
-          },
-          "automatic_rewrite": {
-            "anyOf": [
-              {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": ["never", "once-per-turn"]
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "retained_authority_fallback": {
-            "type": "boolean"
-          }
-        },
-        "required": ["mode", "model"],
-        "additionalProperties": false,
-        "description": "Isolated model-based review of permission requests that would otherwise ask a human."
       },
       "ConfigShell.Option": {
         "type": "object",

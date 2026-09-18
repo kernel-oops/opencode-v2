@@ -442,16 +442,6 @@ export type WebSearchProvider = { id: string; name: string }
 
 export type WebSearchResult = { url: string; title?: string; content?: string; time: { published?: number } }
 
-export type ConfigPermissionReviewerInfo = {
-  mode: "audit-only" | "enforce"
-  model: string
-  policy?: "conservative-v1" | "obvious-risk-only-v1" | "exceptional-risk-only-v1" | null | null
-  automatic_allow?: "never" | "policy-gated" | null | null
-  temporary_read_allow?: boolean
-  automatic_rewrite?: "never" | "once-per-turn" | null | null
-  retained_authority_fallback?: boolean
-}
-
 export type McpProtocol = "legacy" | "auto" | "2026-07-28"
 
 export type ConfigWorktree = { directory: string }
@@ -2007,7 +1997,6 @@ export type ConfigEntry =
         enterprise?: { url?: string }
         username?: string
         permissions?: PermissionRuleset
-        permission_reviewer?: ConfigPermissionReviewerInfo
         agents?: {
           [x: string]: {
             model?: string | { providerID: string; model: string; variant?: string }
