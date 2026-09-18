@@ -219,6 +219,31 @@ describe("bound search tools", () => {
     }).pipe(Effect.scoped),
   )
 
+  it.live("asks about a non-existent external glob target before ever revealing that it is missing", () =>
+    Effect.gen(function* () {
+      if (!linux) return
+      const [active, outside] = yield* fixtures
+      const missing = path.join(outside.path, "does-not-exist")
+      const assertions: Permission.AssertInput[] = []
+      const result = yield* withTools(
+        active.path,
+        (registry) => executeTool(registry, call("glob", { path: missing, pattern: "*.ts" })),
+        assertions,
+        (input) =>
+          Effect.fail(new Permission.BlockedError({ rules: [], permission: input.action, resources: input.resources })),
+      )
+      // A declined `external_directory` ask, not a "does not exist" message: proves the ask fired, and
+      // was rejected, strictly before the existence/type check that would otherwise reveal the target is
+      // missing. Reordering the stat ahead of the ask (as a prior version of this file did) would instead
+      // fail here with `Search path does not exist`, and `assertions` would stay empty.
+      expect(assertions.map((input) => input.action)).toEqual(["external_directory"])
+      expect(result).toEqual({
+        status: "error",
+        error: { type: "permission.rejected", message: "Permission denied: external_directory" },
+      })
+    }).pipe(Effect.scoped),
+  )
+
   it.live("fails closed when a pinned external file is replaced during review", () =>
     Effect.gen(function* () {
       if (!linux) return

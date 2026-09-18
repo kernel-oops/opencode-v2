@@ -284,9 +284,9 @@ export const Plugin = {
       .pipe(Effect.orDie)
 
     const alternatePath = Effect.fn("ReadTool.alternatePath")(function* (absolute: string) {
-      const base = basename(absolute).replace(/[  ]/g, " ")
+      const base = basename(absolute).replace(/[\u00a0\u202f]/g, " ")
       const matches = (yield* reader.list(AbsolutePath.make(dirname(absolute)))).filter(
-        (entry) => entry.type === "file" && entry.name.replace(/[  ]/g, " ") === base,
+        (entry) => entry.type === "file" && entry.name.replace(/[\u00a0\u202f]/g, " ") === base,
       )
       if (matches.length !== 1) return
       return join(dirname(absolute), matches[0].name)

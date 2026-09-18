@@ -114,6 +114,12 @@ export const Plugin = {
                 canonical !== initial.absolute &&
                 (yield* Effect.promise(() => TrustedPathAlias.trusted(initial.absolute, canonical)))
               const requested = aliased ? yield* access.resolve({ path: canonical }) : initial
+              // Unlike upstream (which asks first, then stats), this type-check must precede the ask: it decides
+              // whether `include` names an exact single file inside `requested` (below), which determines what
+              // gets bound and, in turn, what the ask's resource/metadata actually describe. There is no way to
+              // ask a well-formed question first and discover the answer's shape afterwards here, so an unapproved
+              // request does learn whether `requested` exists and its type — a narrower, intentional trade-off for
+              // the exact-file-search feature, not an accidental reorder.
               const requestedType = yield* Environment.typeFollowing(environment.files, requested.absolute).pipe(
                 Effect.catchTag("Environment.NotFound", () => missingPath(input.path)),
               )

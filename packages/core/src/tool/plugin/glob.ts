@@ -72,19 +72,16 @@ export const Plugin = {
               const searchPath = input.path === "undefined" || input.path === "null" ? undefined : input.path
               const source = { type: "tool" as const, messageID: context.messageID, id: context.id }
               const target = yield* access.resolve({ path: searchPath ?? ".", kind: "directory" })
-              const type = yield* Environment.typeFollowing(environment.files, target.absolute).pipe(
-                Effect.catchTag("Environment.NotFound", () =>
-                  Effect.fail(new ToolFailure({ message: `Search path does not exist: ${searchPath ?? "."}` })),
-                ),
-              )
-              if (type !== "directory")
-                return yield* Effect.fail(
-                  new ToolFailure({ message: `Search path is not a directory: ${searchPath ?? "."}` }),
-                )
               const root = target.absolute
               const external = target.externalDirectory !== undefined
               // Pin the directory behind a descriptor chain: project searches from the Location root, external
               // searches from the external directory itself. Both reject symlinked components and mount crossings.
+              // This filesystem access unavoidably precedes the ask below: `bind` must already hold the pinned
+              // descriptor's identity before it can be attested in the ask's metadata (`boundArguments`/`complete`).
+              // It degrades to no binding (never throws) when the target is missing or not a directory, so it does
+              // not itself reveal more than upstream's own resolve step; the existence/type check upstream performs
+              // is deliberately kept below, after the ask, so an unapproved request still learns nothing beyond
+              // what `bind`'s silent degradation already exposes.
               const binding = bindable
                 ? yield* Effect.promise(() => BoundSearchDirectory.bind(external ? root : location.directory, root))
                 : undefined
@@ -137,6 +134,17 @@ export const Plugin = {
                         try: () => BoundSearchDirectory.verify(binding),
                         catch: pinnedFailure,
                       })
+                    // Matches upstream: the existence/type check runs after the ask, not before, so an
+                    // unapproved request cannot learn whether an external path exists or what kind it is.
+                    const type = yield* Environment.typeFollowing(environment.files, root).pipe(
+                      Effect.catchTag("Environment.NotFound", () =>
+                        Effect.fail(new ToolFailure({ message: `Search path does not exist: ${searchPath ?? "."}` })),
+                      ),
+                    )
+                    if (type !== "directory")
+                      return yield* Effect.fail(
+                        new ToolFailure({ message: `Search path is not a directory: ${searchPath ?? "."}` }),
+                      )
                     const limit = input.limit ?? FileSystem.DEFAULT_SEARCH_LIMIT
                     const entries = yield* ripgrep
                       .glob({
