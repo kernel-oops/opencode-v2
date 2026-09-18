@@ -452,16 +452,6 @@ export type ConfigPermissionReviewerInfo = {
   retained_authority_fallback?: boolean
 }
 
-export type ConfigBashPermissionEvaluatorDisabled = { mode: "disabled" }
-
-export type ConfigBashPermissionEvaluatorExpected = {
-  implementation: string
-  version: string
-  commit: string
-  protocol: string
-  platform: string
-}
-
 export type McpProtocol = "legacy" | "auto" | "2026-07-28"
 
 export type ConfigWorktree = { directory: string }
@@ -1697,19 +1687,6 @@ export type WorktreeList = Array<WorktreeDirectory>
 
 export type VcsInfo = { provider?: string; branch: VcsBranch }
 
-export type ConfigBashPermissionEvaluatorActive = {
-  mode: "audit-only" | "permit-only" | "enforce"
-  executable: string
-  policy: string
-  executable_sha256: string
-  policy_sha256: string
-  expected: ConfigBashPermissionEvaluatorExpected
-  timeout_seconds?: number | null | null
-  capacity?: number | null | null
-  max_input_bytes?: number | null | null
-  max_output_bytes?: number | null | null
-}
-
 export type SessionInboxMove = {
   id: string
   sessionID: string
@@ -1950,10 +1927,6 @@ export type ReferenceInfo = {
   source: ReferenceSource
 }
 
-export type ConfigBashPermissionEvaluatorInfo =
-  | ConfigBashPermissionEvaluatorDisabled
-  | ConfigBashPermissionEvaluatorActive
-
 export type AgentInfo = {
   id: string
   name: string
@@ -2020,60 +1993,6 @@ export type SessionCreated = {
   }
 }
 
-export type SessionInboxUser = {
-  id: string
-  sessionID: string
-  time: { created: number }
-  type: "user"
-  payload: SessionInboxUserPayload
-  delivery: SessionInboxDelivery
-}
-
-export type SessionInboxItem =
-  | { type: "user"; payload: SessionInboxUserPayload1; delivery: SessionInboxDelivery }
-  | { type: "synthetic"; payload: SessionInboxSyntheticPayload1; delivery: SessionInboxDelivery }
-  | { type: "compaction"; payload: SessionInboxCompactionPayload; delivery: SessionInboxDelivery }
-  | { type: "move"; payload: SessionInboxMovePayload1; delivery: SessionInboxDelivery }
-
-export type SessionMessageAssistantTool = {
-  type: "tool"
-  id: string
-  name: string
-  executed?: boolean
-  providerState?: SessionMessageProviderState
-  providerResultState?: SessionMessageProviderState
-  state:
-    | SessionMessageToolStateStreaming
-    | SessionMessageToolStateRunning
-    | SessionMessageToolStateCompleted
-    | SessionMessageToolStateError
-  time: { created: number; ran?: number; completed?: number }
-}
-
-export type SessionMessageCompaction =
-  | SessionMessageCompactionRunning
-  | SessionMessageCompactionCompleted
-  | SessionMessageCompactionFailed
-
-export type SessionMessageAssistantTool1 = {
-  type: "tool"
-  id: string
-  name: string
-  executed?: boolean
-  providerState?: SessionMessageProviderState1
-  providerResultState?: SessionMessageProviderState1
-  state:
-    | SessionMessageToolStateStreaming
-    | SessionMessageToolStateRunning1
-    | SessionMessageToolStateCompleted1
-    | SessionMessageToolStateError1
-  time: { created: number; ran?: number; completed?: number }
-}
-
-export type FormFields = [FormField, ...Array<FormField>]
-
-export type FormFields2 = [FormField1, ...Array<FormField1>]
-
 export type ConfigEntry =
   | {
       type: "document"
@@ -2089,7 +2008,6 @@ export type ConfigEntry =
         username?: string
         permissions?: PermissionRuleset
         permission_reviewer?: ConfigPermissionReviewerInfo
-        bash_permission_evaluator?: ConfigBashPermissionEvaluatorInfo
         agents?: {
           [x: string]: {
             model?: string | { providerID: string; model: string; variant?: string }
@@ -2249,6 +2167,60 @@ export type ConfigEntry =
       }
     }
   | { type: "directory"; path: string }
+
+export type SessionInboxUser = {
+  id: string
+  sessionID: string
+  time: { created: number }
+  type: "user"
+  payload: SessionInboxUserPayload
+  delivery: SessionInboxDelivery
+}
+
+export type SessionInboxItem =
+  | { type: "user"; payload: SessionInboxUserPayload1; delivery: SessionInboxDelivery }
+  | { type: "synthetic"; payload: SessionInboxSyntheticPayload1; delivery: SessionInboxDelivery }
+  | { type: "compaction"; payload: SessionInboxCompactionPayload; delivery: SessionInboxDelivery }
+  | { type: "move"; payload: SessionInboxMovePayload1; delivery: SessionInboxDelivery }
+
+export type SessionMessageAssistantTool = {
+  type: "tool"
+  id: string
+  name: string
+  executed?: boolean
+  providerState?: SessionMessageProviderState
+  providerResultState?: SessionMessageProviderState
+  state:
+    | SessionMessageToolStateStreaming
+    | SessionMessageToolStateRunning
+    | SessionMessageToolStateCompleted
+    | SessionMessageToolStateError
+  time: { created: number; ran?: number; completed?: number }
+}
+
+export type SessionMessageCompaction =
+  | SessionMessageCompactionRunning
+  | SessionMessageCompactionCompleted
+  | SessionMessageCompactionFailed
+
+export type SessionMessageAssistantTool1 = {
+  type: "tool"
+  id: string
+  name: string
+  executed?: boolean
+  providerState?: SessionMessageProviderState1
+  providerResultState?: SessionMessageProviderState1
+  state:
+    | SessionMessageToolStateStreaming
+    | SessionMessageToolStateRunning1
+    | SessionMessageToolStateCompleted1
+    | SessionMessageToolStateError1
+  time: { created: number; ran?: number; completed?: number }
+}
+
+export type FormFields = [FormField, ...Array<FormField>]
+
+export type FormFields2 = [FormField1, ...Array<FormField1>]
 
 export type SessionsResponse = { data: Array<SessionInfo>; cursor: { previous?: string | null; next?: string | null } }
 

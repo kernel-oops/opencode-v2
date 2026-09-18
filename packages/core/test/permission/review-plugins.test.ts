@@ -20,9 +20,7 @@ import { Session } from "@opencode/core/session"
 import { SessionTable } from "@opencode/core/session/sql"
 import { SessionStore } from "@opencode/core/session/store"
 import { SessionMessage } from "@opencode/core/session/message"
-import { BashPermissionEvaluator } from "@opencode/core/permission/bash-evaluator"
 import { PermissionReviewer } from "@opencode/core/permission/reviewer"
-import { ConfigBashPermissionEvaluatorPlugin } from "@opencode/core/config/plugin/bash-permission-evaluator"
 import { ConfigPermissionReviewerPlugin } from "@opencode/core/config/plugin/permission-reviewer"
 import { location } from "../fixture/location"
 import { host } from "../plugin/host"
@@ -53,13 +51,6 @@ const document = (info: Record<string, unknown>) => new Document({ type: "docume
 const configLayer = (info: Record<string, unknown>) =>
   Layer.mock(Config.Service)({ entries: () => Effect.succeed([document(info)]) })
 
-const evaluatorConfig = {
-  executable: "/opt/approve-bash",
-  policy: "/opt/policy.yaml",
-  executable_sha256: "a".repeat(64),
-  policy_sha256: "b".repeat(64),
-  expected: { implementation: "x", version: "1", commit: "c", protocol: "p", platform: "linux" },
-}
 const reviewerConfig = {
   mode: "enforce",
   model: "openai/gpt-5.6-luna",
@@ -140,99 +131,8 @@ const source = (messageID = "msg_turn_1") => ({
   id: "call_1",
 })
 
-describe("Bash permission evaluator plugin", () => {
-  const evaluator = (results: BashPermissionEvaluator.Result[]) => {
-    const queue = run(results)
-    return {
-      queue,
-      layer: Layer.mock(BashPermissionEvaluator.Service)({
-        prepare: () =>
-          Effect.succeed({
-            admitted: true,
-            result: queue.layerResult(),
-            settled: Effect.void,
-            abort: () => {},
-            isSettled: () => true,
-          }),
-      }),
-    }
-  }
-
-  const install = (mode: string, results: BashPermissionEvaluator.Result[]) =>
-    Effect.gen(function* () {
-      yield* setup
-      const fake = evaluator(results)
-      const ctx = yield* context
-      yield* ConfigBashPermissionEvaluatorPlugin.Plugin.effect(ctx).pipe(
-        Effect.provide(
-          Layer.mergeAll(configLayer({ bash_permission_evaluator: { mode, ...evaluatorConfig } }), fake.layer),
-        ),
-      )
-      return fake.queue
-    })
-
-  const shell = (command = "rm -rf build", cwd = "/project") => ({
-    sessionID,
-    action: "shell",
-    resources: [command],
-    metadata: { command, cwd },
-    source: source(),
-  })
-
-  it.effect("permit-only turns an ask into allow but never denies", () =>
-    Effect.gen(function* () {
-      const queue = yield* install("permit-only", [{ decision: "allow" }, { decision: "deny" }, { decision: "noop" }])
-      const permission = yield* Permission.Service
-      expect((yield* permission.ask(shell())).effect).toBe("allow")
-      expect((yield* permission.ask(shell())).effect).toBe("ask")
-      expect((yield* permission.ask(shell())).effect).toBe("ask")
-      expect(queue.calls.length).toBe(3)
-    }),
-  )
-
-  it.effect("enforce may deny with a reason and failures fall back to a human", () =>
-    Effect.gen(function* () {
-      yield* install("enforce", [{ decision: "deny" }, { failure: "timeout" }, { decision: "allow" }])
-      const permission = yield* Permission.Service
-      const denied = yield* permission.assert(shell()).pipe(Effect.flip)
-      expect(denied).toBeInstanceOf(Permission.BlockedError)
-      expect(String(denied.message)).toContain("Bash permission evaluator")
-      expect((yield* permission.ask(shell())).effect).toBe("ask")
-      expect((yield* permission.ask(shell())).effect).toBe("allow")
-    }),
-  )
-
-  it.effect("ignores non-shell actions, static denies and static allows", () =>
-    Effect.gen(function* () {
-      const queue = yield* install("enforce", [{ decision: "allow" }])
-      const permission = yield* Permission.Service
-      expect((yield* permission.ask({ ...shell(), action: "read", resources: ["x"] })).effect).toBe("ask")
-      const agents = yield* Agent.Service
-      yield* agents.transform((editor) =>
-        editor.update(Agent.ID.make("test"), (agent) => {
-          agent.permissions = [{ action: "shell", resource: "*", effect: "deny" }]
-        }),
-      )
-      expect((yield* permission.ask(shell())).effect).toBe("deny")
-      yield* agents.transform((editor) =>
-        editor.update(Agent.ID.make("test"), (agent) => {
-          agent.permissions = [{ action: "shell", resource: "*", effect: "allow" }]
-        }),
-      )
-      expect((yield* permission.ask(shell())).effect).toBe("allow")
-      expect(queue.calls.length).toBe(0)
-    }),
-  )
-
-  it.effect("does nothing when the invocation metadata is missing", () =>
-    Effect.gen(function* () {
-      const queue = yield* install("permit-only", [{ decision: "allow" }])
-      const permission = yield* Permission.Service
-      expect((yield* permission.ask({ ...shell(), metadata: undefined })).effect).toBe("ask")
-      expect(queue.calls.length).toBe(0)
-    }),
-  )
-})
+// The Bash permission evaluator plugin was moved out of core into an ordinary external plugin
+// (config-v2/opencode/plugins/bash-permission-evaluator); its own test suite lives there now.
 
 describe("Permission reviewer plugin", () => {
   const reviewer = (results: PermissionReviewer.AssessmentResult[]) => {
