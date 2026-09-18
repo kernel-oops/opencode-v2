@@ -195,8 +195,12 @@ export function useTaskControls(sessionID: () => string | undefined): TaskContro
 
 export function TaskControls(props: { controls: TaskControlsActions }) {
   const theme = useTheme()
+  const relevant = () => {
+    const state = props.controls.snapshot()
+    return state && (state.paused || state.active || runningTasks(state) > 0) ? state : undefined
+  }
   return (
-    <Show when={props.controls.snapshot()}>
+    <Show when={relevant()}>
       {(state) => (
         <box flexDirection="column" paddingLeft={2}>
           <Show when={state().paused}>

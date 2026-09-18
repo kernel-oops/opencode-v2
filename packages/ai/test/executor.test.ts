@@ -253,7 +253,8 @@ describe("RequestExecutor", () => {
       expectAIError(error)
       expect(error.reason).toMatchObject({ _tag: "InvalidRequest" })
       expect("classification" in error.reason ? error.reason.classification : undefined).toBeUndefined()
-      expect(error.message).toBe("Provider request failed with HTTP 400")
+      // No structured message field, so the raw body is appended for diagnosability.
+      expect(error.message).toBe("Provider request failed with HTTP 400: invalid parameter")
     }).pipe(Effect.provide(fixedResponse("invalid parameter", { status: 400 }))),
   )
 
@@ -288,7 +289,8 @@ describe("RequestExecutor", () => {
       expect(error.reason).toMatchObject({
         _tag: "InvalidRequest",
       })
-      expect(error.message).toBe("Provider request failed with HTTP 400")
+      // The structured message is present but blank, so the raw body is appended as a fallback.
+      expect(error.message).toBe('Provider request failed with HTTP 400: {"error":{"message":"  "}}')
     }).pipe(Effect.provide(fixedResponse('{"error":{"message":"  "}}', { status: 400 }))),
   )
 
