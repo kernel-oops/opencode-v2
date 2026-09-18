@@ -12,36 +12,11 @@ import { Wildcard } from "../util/wildcard.js"
 
 type Part = { type: string; text: string }
 const CWD = new Set(["cd", "chdir", "popd", "pushd", "push-location", "set-location"])
-// Commands whose non-flag path arguments can mutate or remove a target outside the working
-// directory. Their arguments are additionally authorized as external-directory resources, on
-// top of the ordinary whole-command ask below: an ask'd `external_directory` rule (or an
-// explicit deny) applies to the exact target even when the shell resource itself would be
-// allowed. This mirrors the invariant the legacy fork enforced by deriving the external
-// directory check from the command's path argument.
-const MUTATING = new Set([
-  "rm",
-  "rmdir",
-  "unlink",
-  "mv",
-  "cp",
-  "shred",
-  "truncate",
-  "ln",
-  "chmod",
-  "chown",
-  "dd",
-  "remove-item",
-  "move-item",
-  "copy-item",
-  "rename-item",
-])
 const POWERSHELL_PATH_FLAGS = new Set(["-literalpath", "-path"])
 
 export type Result = {
   commands: Array<{ resource: string; save: string }>
   directories: string[]
-  /** Non-flag path arguments of a mutating command (see MUTATING), unresolved. */
-  paths: string[]
 }
 
 const ARITY: Record<string, number> = {
@@ -216,18 +191,13 @@ const scanLegacy = Effect.fnUntraced(function* (command: string, shell: string, 
               result.directories.push(...directoryArgs(command, powershell, cwd, shell))
               return result
             }
-            if (MUTATING.has(name)) result.paths.push(...directoryArgs(command, powershell, cwd, shell))
             result.commands.push({
               resource: (node.parent?.type === "redirected_statement" ? node.parent.text : node.text).trim(),
               save: `${prefix(tokens).join(" ")} *`,
             })
             return result
           },
-          {
-            commands: [] as Array<{ resource: string; save: string }>,
-            directories: [] as string[],
-            paths: [] as string[],
-          },
+          { commands: [] as Array<{ resource: string; save: string }>, directories: [] as string[] },
         ),
       ),
     (tree) => Effect.sync(() => tree.delete()),
@@ -244,17 +214,7 @@ export const scanPortable = Effect.fnUntraced(function* (command: string, shell:
   if (result.kind === "opaque")
     return yield* Effect.fail(new Error(`Portable shell scanner cannot analyze command: ${result.reason}`))
 
-  const output: Result = { commands: [], directories: [], paths: [] }
-  const asParts = (words: readonly string[]): Part[] =>
-    words.flatMap((text): Part[] => {
-      const parameter = powershell ? /^(-(?:literalpath|path)):(.*)$/i.exec(text) : undefined
-      if (parameter)
-        return [
-          { type: "command_parameter", text: parameter[1] },
-          { type: "word", text: parameter[2] },
-        ]
-      return [{ type: powershell && text.startsWith("-") ? "command_parameter" : "word", text }]
-    })
+  const output: Result = { commands: [], directories: [] }
   for (const item of result.commands) {
     // The legacy command walk skips declarations, not the substitutions within them.
     if (item.declaration) continue
@@ -263,10 +223,24 @@ export const scanPortable = Effect.fnUntraced(function* (command: string, shell:
     if (powershell && item.statementHead && /^foreach(?:-|$)/i.test(words[0] ?? "")) continue
     const name = powershell ? words[0]?.toLowerCase() : words[0]
     if (CWD.has(name)) {
-      output.directories.push(...directoryArgs(asParts(words), powershell, cwd, shell))
+      output.directories.push(
+        ...directoryArgs(
+          words.flatMap((text): Part[] => {
+            const parameter = powershell ? /^(-(?:literalpath|path)):(.*)$/i.exec(text) : undefined
+            if (parameter)
+              return [
+                { type: "command_parameter", text: parameter[1] },
+                { type: "word", text: parameter[2] },
+              ]
+            return [{ type: powershell && text.startsWith("-") ? "command_parameter" : "word", text }]
+          }),
+          powershell,
+          cwd,
+          shell,
+        ),
+      )
       continue
     }
-    if (MUTATING.has(name)) output.paths.push(...directoryArgs(asParts(words), powershell, cwd, shell))
     const selected = prefix(words.slice(0, PREFIX_LENGTH))
     const conventional = `${selected.join(" ")} *`
     const end = item.wordEnds?.[selected.length - 1]

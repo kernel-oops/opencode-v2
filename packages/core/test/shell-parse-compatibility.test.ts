@@ -87,7 +87,7 @@ describe("portable shell parser compatibility", () => {
   test("derives the legacy prefix for long argument lists", async () => {
     const command = `echo ${"x ".repeat(16_000)}`.trimEnd()
     const result = await Effect.runPromise(ShellParse.scan(command, "bash", "/workspace", { portable: true }))
-    expect(result).toEqual({ commands: [{ resource: command, save: "echo *" }], directories: [], paths: [] })
+    expect(result).toEqual({ commands: [{ resource: command, save: "echo *" }], directories: [] })
   })
 
   test("extracts inline PowerShell directory flags with case-insensitive names and quoted values", async () => {
@@ -98,7 +98,7 @@ describe("portable shell parser compatibility", () => {
         "/workspace",
       ),
     )
-    expect(result).toEqual({ commands: [], directories: ["C:\\outside", "../other dir"], paths: [] })
+    expect(result).toEqual({ commands: [], directories: ["C:\\outside", "../other dir"] })
   })
 })
 
@@ -109,8 +109,8 @@ describe("current native and legacy parity gaps", () => {
       name: "native omits the legacy empty command-name node for an assignment with redirection",
       shell: "bash",
       command: "FOO=bar > output",
-      legacy: { commands: [{ resource: "FOO=bar > output", save: " *" }], directories: [], paths: [] },
-      native: { commands: [], directories: [], paths: [] },
+      legacy: { commands: [{ resource: "FOO=bar > output", save: " *" }], directories: [] },
+      native: { commands: [], directories: [] },
     },
     {
       name: "native retains nested executable commands without the legacy empty assignment command-name node",
@@ -121,23 +121,23 @@ describe("current native and legacy parity gaps", () => {
           { resource: "FOO=$(printf value) > output", save: " *" },
           { resource: "printf value", save: "printf *" },
         ],
-        directories: [], paths: [],
+        directories: [],
       },
-      native: { commands: [{ resource: "printf value", save: "printf *" }], directories: [], paths: [] },
+      native: { commands: [{ resource: "printf value", save: "printf *" }], directories: [] },
     },
     {
       name: "native keeps numeric arguments in saved prefixes",
       shell: "bash",
       command: "git 2 status",
-      legacy: { commands: [{ resource: "git 2 status", save: "git status *" }], directories: [], paths: [] },
-      native: { commands: [{ resource: "git 2 status", save: "git 2 *" }], directories: [], paths: [] },
+      legacy: { commands: [{ resource: "git 2 status", save: "git status *" }], directories: [] },
+      native: { commands: [{ resource: "git 2 status", save: "git 2 *" }], directories: [] },
     },
     {
       name: "native keeps numeric directory names and operator-shaped arguments",
       shell: "bash",
       command: "cd 123; git == value",
-      legacy: { commands: [{ resource: "git == value", save: "git value *" }], directories: [], paths: [] },
-      native: { commands: [{ resource: "git == value", save: "git == *" }], directories: ["123"], paths: [] },
+      legacy: { commands: [{ resource: "git == value", save: "git value *" }], directories: [] },
+      native: { commands: [{ resource: "git == value", save: "git == *" }], directories: ["123"] },
     },
     {
       name: "native preserves substitution source in saved prefixes instead of skipping the argument",
@@ -148,59 +148,56 @@ describe("current native and legacy parity gaps", () => {
           { resource: "git $(printf status) diff", save: "git diff *" },
           { resource: "printf status", save: "printf *" },
         ],
-        directories: [], paths: [],
+        directories: [],
       },
       native: {
         commands: [
           { resource: "git $(printf status) diff", save: "git $(printf status) *" },
           { resource: "printf status", save: "printf *" },
         ],
-        directories: [], paths: [],
+        directories: [],
       },
     },
     {
       name: "directory line continuations remain unresolved source rather than legacy split operands",
       shell: "bash",
       command: "cd before\\\nafter",
-      legacy: { commands: [], directories: ["before", "after"], paths: [] },
-      native: { commands: [], directories: ["before\\\nafter"], paths: [] },
+      legacy: { commands: [], directories: ["before", "after"] },
+      native: { commands: [], directories: ["before\\\nafter"] },
     },
     {
       name: "native recognizes PowerShell carriage-return separators omitted by the legacy AST",
       shell: "pwsh",
       command: "Get-ChildItem\rRemove-Item victim",
-      legacy: { commands: [], directories: [], paths: [] },
+      legacy: { commands: [], directories: [] },
       native: {
         commands: [
           { resource: "Get-ChildItem", save: "Get-ChildItem *" },
           { resource: "Remove-Item victim", save: "Remove-Item *" },
         ],
         directories: [],
-        // `Remove-Item` is a mutating command: its non-flag path argument is also authorized
-        // as an external-directory resource (see MUTATING in shell/parse.ts).
-        paths: ["victim"],
       },
     },
     {
       name: "native recognizes tab-separated PowerShell commands omitted by the legacy AST",
       shell: "pwsh",
       command: "git\tstatus",
-      legacy: { commands: [], directories: [], paths: [] },
-      native: { commands: [{ resource: "git\tstatus", save: "git\tstatus *" }], directories: [], paths: [] },
+      legacy: { commands: [], directories: [] },
+      native: { commands: [{ resource: "git\tstatus", save: "git\tstatus *" }], directories: [] },
     },
     {
       name: "native preserves complete PowerShell flag=value resources",
       shell: "pwsh",
       command: "git --flag=value",
-      legacy: { commands: [{ resource: "git --flag", save: "git --flag *" }], directories: [], paths: [] },
-      native: { commands: [{ resource: "git --flag=value", save: "git --flag=value *" }], directories: [], paths: [] },
+      legacy: { commands: [{ resource: "git --flag", save: "git --flag *" }], directories: [] },
+      native: { commands: [{ resource: "git --flag=value", save: "git --flag=value *" }], directories: [] },
     },
     {
       name: "native does not split comma-separated PowerShell directory operands",
       shell: "pwsh",
       command: "Set-Location a,b",
-      legacy: { commands: [], directories: ["a", ",b"], paths: [] },
-      native: { commands: [], directories: ["a,b"], paths: [] },
+      legacy: { commands: [], directories: ["a", ",b"] },
+      native: { commands: [], directories: ["a,b"] },
     },
   ]) {
     test(fixture.name, async () => {
@@ -232,7 +229,6 @@ describe("legacy directory command behavior", () => {
         { resource: "pop-location", save: "pop-location *" },
       ],
       directories: ["/outside", "/elsewhere", "/stack"],
-      paths: [],
     })
   })
 })

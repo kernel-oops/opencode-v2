@@ -14,7 +14,7 @@ describe("ShellParse", () => {
         { resource: "git status", save: "git status *" },
         { resource: "npm run test -- --watch", save: "npm run test *" },
       ],
-      directories: [], paths: [],
+      directories: [],
     })
   })
 
@@ -87,7 +87,7 @@ describe("ShellParse", () => {
 
   test("declaration filtering retains directory checks inside command substitutions", async () => {
     const command = "export X=$(cd /outside; printf value)"
-    const expected = { commands: [{ resource: "printf value", save: "printf *" }], directories: ["/outside"], paths: [] }
+    const expected = { commands: [{ resource: "printf value", save: "printf *" }], directories: ["/outside"] }
     expect(await Effect.runPromise(ShellParse.scan(command, "/bin/bash", "/workspace"))).toEqual(expected)
     expect(await Effect.runPromise(ShellParse.scan(command, "/bin/bash", "/workspace", { portable: true }))).toEqual(
       expected,
@@ -100,7 +100,7 @@ describe("ShellParse", () => {
         { resource: "export X", save: "export *" },
         { resource: "unset X", save: "unset *" },
       ],
-      directories: [], paths: [],
+      directories: [],
     })
   })
 
@@ -123,7 +123,6 @@ describe("ShellParse", () => {
     expect(result).toEqual({
       commands: [{ resource: "git status", save: "git status *" }],
       directories: ["src dir"],
-      paths: [],
     })
   })
 

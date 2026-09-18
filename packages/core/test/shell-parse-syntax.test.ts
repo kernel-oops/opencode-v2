@@ -8,11 +8,11 @@ describe("native shell syntax compatibility", () => {
     const command = "& $Command value"
     expect(await Effect.runPromise(ShellParse.scan(command, "pwsh", "/workspace"))).toEqual({
       commands: [{ resource: command, save: "$Command *" }],
-      directories: [], paths: [],
+      directories: [],
     })
     expect(await Effect.runPromise(ShellParse.scan(command, "pwsh", "/workspace", { portable: true }))).toEqual({
       commands: [{ resource: command, save: "& $Command *" }],
-      directories: [], paths: [],
+      directories: [],
     })
   })
 
@@ -82,7 +82,7 @@ describe("native shell syntax compatibility", () => {
         { resource: command, save: "cat *" },
         { resource: "printf first", save: "printf *" },
       ],
-      directories: [], paths: [],
+      directories: [],
     }
     expect(await Effect.runPromise(ShellParse.scanPortable(command, "bash", "/workspace"))).toEqual(expected)
     expect(await Effect.runPromise(ShellParse.scan(command, "bash", "/workspace", { portable: true }))).toEqual(
