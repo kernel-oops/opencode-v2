@@ -115,7 +115,6 @@ const context = Effect.gen(function* () {
       list: () => Effect.die("unused"),
       get: () => Effect.die("unused"),
       reply: () => Effect.die("unused"),
-      rules: () => Effect.die("unused"),
     },
   })
 })
