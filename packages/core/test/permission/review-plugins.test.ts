@@ -317,6 +317,31 @@ describe("Permission reviewer plugin", () => {
     }),
   )
 
+  it.effect("automatic allow stays inert in audit-only mode despite policy-gated", () =>
+    Effect.gen(function* () {
+      // Config no longer rejects this combination at decode time (see schema/config/permission-reviewer.ts);
+      // the invariant is enforced here instead, at the point of use.
+      yield* install(
+        { mode: "audit-only", model: "openai/gpt-5.6-luna", automatic_allow: "policy-gated" },
+        [allow] as never,
+      )
+      const permission = yield* Permission.Service
+      expect((yield* permission.ask(request())).effect).toBe("ask")
+    }),
+  )
+
+  it.effect("automatic allow stays inert under the default conservative policy despite policy-gated", () =>
+    Effect.gen(function* () {
+      // policy defaults to "conservative-v1", not a risk policy, despite automatic_allow: policy-gated
+      yield* install(
+        { mode: "enforce", model: "openai/gpt-5.6-luna", automatic_allow: "policy-gated" },
+        [allow] as never,
+      )
+      const permission = yield* Permission.Service
+      expect((yield* permission.ask(request())).effect).toBe("ask")
+    }),
+  )
+
   it.effect("conservative policy only denies", () =>
     Effect.gen(function* () {
       const conservative = {

@@ -232,6 +232,9 @@ async function copySnapshot(source: FileHandle, mode: number) {
 }
 
 async function bindFile(file: string, expectedHash: string, mode: number): Promise<BoundFile> {
+  // A relative path would otherwise resolve against the server process's cwd instead of failing.
+  // Config-level validation is intentionally not a schema filter (breaks generated-client codegen).
+  if (!isAbsolute(file) || normalize(file) !== file) throw new Error("path is not absolute or canonical")
   const components = await inspectPath(file)
   const original = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW)
   let snapshot: FileHandle | undefined

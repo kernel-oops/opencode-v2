@@ -170,6 +170,24 @@ it.live("rejects symlinked executable, policy or parent directory", () =>
   }),
 )
 
+it.live("rejects a non-absolute or non-canonical configured executable or policy path", () =>
+  Effect.gen(function* () {
+    const test = yield* fixture()
+    const evaluator = yield* BashPermissionEvaluator.Service
+    for (const config of [
+      { ...test.config, executable: path.relative(process.cwd(), test.executable) },
+      { ...test.config, policy: path.relative(process.cwd(), test.policy) },
+      {
+        ...test.config,
+        executable: `${test.directory}/../${path.basename(test.directory)}/${path.basename(test.executable)}`,
+      },
+    ]) {
+      const run = yield* evaluator.prepare({ config, action: action(test.directory) })
+      expect(yield* run.result).toEqual({ failure: "integrity" })
+    }
+  }),
+)
+
 it.live("times out slow evaluators and reports capacity exhaustion", () =>
   Effect.gen(function* () {
     const evaluator = yield* BashPermissionEvaluator.Service

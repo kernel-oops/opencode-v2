@@ -75,23 +75,27 @@ describe("permission review configuration", () => {
     })
   })
 
-  test("rejects automatic review outside enforce mode with a risk policy", () => {
-    expect(() =>
+  // Decode no longer rejects an automatic-review mode/policy mismatch (a Schema.filter without
+  // portable arbitrary/representation metadata breaks the generated-client codegen, since this
+  // config is reachable from GET /api/config's response schema). The invariant is enforced at the
+  // point of use instead — see "automatic allow stays inert…" in permission/review-plugins.test.ts.
+  test("accepts an automatic-review mode/policy mismatch at decode time", () => {
+    expect(
       decode({
         permission_reviewer: { mode: "audit-only", model: "openai/gpt-5.6-luna", automatic_allow: "policy-gated" },
-      }),
-    ).toThrow()
-    expect(() =>
+      }).permission_reviewer,
+    ).toMatchObject({ mode: "audit-only", automatic_allow: "policy-gated" })
+    expect(
       decode({
         permission_reviewer: { mode: "enforce", model: "openai/gpt-5.6-luna", automatic_allow: "policy-gated" },
-      }),
-    ).toThrow()
+      }).permission_reviewer,
+    ).toMatchObject({ mode: "enforce", policy: "conservative-v1", automatic_allow: "policy-gated" })
   })
 
   test("rejects malformed evaluator pins", () => {
-    expect(() =>
-      decode({ bash_permission_evaluator: { ...central.bash_permission_evaluator, executable: "relative/path" } }),
-    ).toThrow()
+    // A relative/non-canonical executable or policy path is no longer rejected at decode time for
+    // the same codegen-portability reason; see "rejects a non-absolute or non-canonical configured
+    // executable or policy path" in permission/bash-evaluator.test.ts.
     expect(() =>
       decode({ bash_permission_evaluator: { ...central.bash_permission_evaluator, executable_sha256: "nope" } }),
     ).toThrow()
