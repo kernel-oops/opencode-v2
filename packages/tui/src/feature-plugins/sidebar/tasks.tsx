@@ -27,7 +27,12 @@ function View(props: { context: Plugin.Context; sessionID: string }) {
         </text>
         <For each={list()}>
           {(task) => (
-            <box flexDirection="row" gap={1} minWidth={0}>
+            <box
+              flexDirection="row"
+              gap={1}
+              minWidth={0}
+              onMouseDown={() => props.context.ui.router.navigate({ type: "session", sessionID: task.sessionID })}
+            >
               <text flexShrink={0} style={{ fg: dot(task.status) }}>
                 •
               </text>
