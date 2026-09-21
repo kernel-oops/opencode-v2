@@ -40,3 +40,13 @@ export const StopAllResult = Schema.Struct({
   }),
 }).annotate({ identifier: "SessionTask.StopAllResult" })
 export type StopAllResult = typeof StopAllResult.Type
+
+export const CancelOneResult = Schema.Struct({
+  owned: Schema.Boolean.annotate({
+    description: "Whether the given sessionID was an owned background subagent of this Session.",
+  }),
+  cancelled: Schema.Array(SessionID).annotate({
+    description: "Sessions whose jobs were cancelled and suppressed, descendants first.",
+  }),
+}).annotate({ identifier: "SessionTask.CancelOneResult" })
+export type CancelOneResult = typeof CancelOneResult.Type

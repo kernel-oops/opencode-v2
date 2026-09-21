@@ -21,18 +21,26 @@ export type StopAllResult = typeof StopAllResult.Type
 export const ResumeResult = SessionTask.ResumeResult
 export type ResumeResult = typeof ResumeResult.Type
 
+export const CancelOneResult = SessionTask.CancelOneResult
+export type CancelOneResult = typeof CancelOneResult.Type
+
 /**
  * Separate response and work controls for a controller Session that owns
  * background subagents. "Stop response" pauses automatic completion delivery
  * and interrupts the current response while accepted background work survives;
  * "resume" releases that pause and rings the Session doorbell; "stop all" also
- * cancels the owned job tree and permanently suppresses its notifications.
+ * cancels the owned job tree and permanently suppresses its notifications;
+ * "cancel one" does the same for a single owned child, refusing one that isn't owned.
  */
 export interface Interface {
   readonly status: (sessionID: SessionSchema.ID) => Effect.Effect<Status, NotFoundError>
   readonly stopResponse: (sessionID: SessionSchema.ID) => Effect.Effect<StopResponseResult, NotFoundError>
   readonly resume: (sessionID: SessionSchema.ID) => Effect.Effect<ResumeResult, NotFoundError>
   readonly stopAll: (sessionID: SessionSchema.ID) => Effect.Effect<StopAllResult, NotFoundError>
+  readonly cancelOne: (
+    parentSessionID: SessionSchema.ID,
+    childSessionID: SessionSchema.ID,
+  ) => Effect.Effect<CancelOneResult, NotFoundError>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/SessionTaskControl") {}
@@ -95,18 +103,22 @@ const layer = Layer.effect(
       return ResumeResult.make({ resumed: paused })
     })
 
+    // Depth first: a child's own descendants are suppressed before its notification could fire.
+    const cancelEntry = (entry: Effect.Success<ReturnType<typeof children>>[number]): Effect.Effect<Array<SessionSchema.ID>> =>
+      Effect.gen(function* () {
+        const cancelled = yield* cancelTree(entry.recovery.childSessionID)
+        if (entry.job.status !== "running") return cancelled
+        yield* execution.interrupt(entry.recovery.childSessionID, { reason: "user" })
+        yield* jobs.cancel(entry.job.id, { suppress: true })
+        cancelled.push(entry.recovery.childSessionID)
+        return cancelled
+      })
+
     const cancelTree = (parentSessionID: SessionSchema.ID): Effect.Effect<Array<SessionSchema.ID>> =>
       Effect.gen(function* () {
         const owned = yield* children(parentSessionID)
         const cancelled: Array<SessionSchema.ID> = []
-        for (const { job, recovery } of owned) {
-          // Depth first: descendants are suppressed before their parent's notification could fire.
-          cancelled.push(...(yield* cancelTree(recovery.childSessionID)))
-          if (job.status !== "running") continue
-          yield* execution.interrupt(recovery.childSessionID, { reason: "user" })
-          yield* jobs.cancel(job.id, { suppress: true })
-          cancelled.push(recovery.childSessionID)
-        }
+        for (const entry of owned) cancelled.push(...(yield* cancelEntry(entry)))
         return cancelled
       })
 
@@ -117,7 +129,18 @@ const layer = Layer.effect(
       return StopAllResult.make({ interrupted, cancelled })
     })
 
-    return Service.of({ status, stopResponse, resume, stopAll })
+    const cancelOne: Interface["cancelOne"] = Effect.fn("SessionTaskControl.cancelOne")(
+      function* (parentSessionID, childSessionID) {
+        yield* get(parentSessionID)
+        const owned = yield* children(parentSessionID)
+        const entry = owned.find((entry) => entry.recovery.childSessionID === childSessionID)
+        if (!entry) return CancelOneResult.make({ owned: false, cancelled: [] })
+        const cancelled = yield* cancelEntry(entry)
+        return CancelOneResult.make({ owned: true, cancelled })
+      },
+    )
+
+    return Service.of({ status, stopResponse, resume, stopAll, cancelOne })
   }),
 )
 

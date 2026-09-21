@@ -58,6 +58,7 @@ import { Ripgrep } from "../ripgrep.js"
 import { Session } from "../session.js"
 import { SessionCompaction } from "../session/compaction.js"
 import { SessionInstructions } from "../session/instructions.js"
+import { SessionTaskControl } from "../session/task-control.js"
 import { Shell } from "../shell.js"
 import { ShellSelect } from "../shell/select.js"
 import { Snapshot } from "../snapshot.js"
@@ -76,6 +77,7 @@ import { ShellTool } from "../tool/plugin/shell.js"
 import { SkillTool } from "../tool/plugin/skill.js"
 import { TaskCallbackPlugin } from "./task-callback.js"
 import { SubagentTool } from "../tool/plugin/subagent.js"
+import { TaskTool } from "../tool/plugin/task.js"
 import { Tool } from "../tool.js"
 import { ToolOutput } from "../tool-output.js"
 import { WebFetchTool } from "../tool/plugin/webfetch.js"
@@ -134,6 +136,7 @@ const services = [
   Session.Service,
   SessionCompaction.Service,
   SessionInstructions.Service,
+  SessionTaskControl.Service,
   Shell.Service,
   ShellSelect.Service,
   Snapshot.Service,
@@ -185,6 +188,7 @@ export const requirements = LayerNode.group([
   Session.node,
   SessionCompaction.node,
   SessionInstructions.node,
+  SessionTaskControl.node,
   Shell.node,
   ShellSelect.node,
   Snapshot.node,
@@ -228,6 +232,7 @@ const pre = [
   ShellTool.Plugin,
   SkillTool.Plugin,
   SubagentTool.Plugin,
+  TaskTool.Plugin,
   // Runs after tool plugins so the report-only guard sees every advertised tool.
   TaskCallbackPlugin.Plugin,
   WebFetchTool.Plugin,
