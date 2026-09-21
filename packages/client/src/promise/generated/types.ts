@@ -4333,6 +4333,60 @@ export type SessionSyntheticInput = {
 
 export type SessionSyntheticOutput = { data: SessionInboxSynthetic }["data"]
 
+export type SessionAppendInput = {
+  readonly sessionID: { readonly sessionID: string }["sessionID"]
+  readonly id?: {
+    readonly id?: string | null
+    readonly text: string
+    readonly final?: boolean | null
+    readonly agent?: string | null
+    readonly model?: { readonly id: string; readonly providerID: string; readonly variant?: string } | null
+    readonly metadata?: { readonly [x: string]: JsonValue } | null
+  }["id"]
+  readonly text: {
+    readonly id?: string | null
+    readonly text: string
+    readonly final?: boolean | null
+    readonly agent?: string | null
+    readonly model?: { readonly id: string; readonly providerID: string; readonly variant?: string } | null
+    readonly metadata?: { readonly [x: string]: JsonValue } | null
+  }["text"]
+  readonly final?: {
+    readonly id?: string | null
+    readonly text: string
+    readonly final?: boolean | null
+    readonly agent?: string | null
+    readonly model?: { readonly id: string; readonly providerID: string; readonly variant?: string } | null
+    readonly metadata?: { readonly [x: string]: JsonValue } | null
+  }["final"]
+  readonly agent?: {
+    readonly id?: string | null
+    readonly text: string
+    readonly final?: boolean | null
+    readonly agent?: string | null
+    readonly model?: { readonly id: string; readonly providerID: string; readonly variant?: string } | null
+    readonly metadata?: { readonly [x: string]: JsonValue } | null
+  }["agent"]
+  readonly model?: {
+    readonly id?: string | null
+    readonly text: string
+    readonly final?: boolean | null
+    readonly agent?: string | null
+    readonly model?: { readonly id: string; readonly providerID: string; readonly variant?: string } | null
+    readonly metadata?: { readonly [x: string]: JsonValue } | null
+  }["model"]
+  readonly metadata?: {
+    readonly id?: string | null
+    readonly text: string
+    readonly final?: boolean | null
+    readonly agent?: string | null
+    readonly model?: { readonly id: string; readonly providerID: string; readonly variant?: string } | null
+    readonly metadata?: { readonly [x: string]: JsonValue } | null
+  }["metadata"]
+}
+
+export type SessionAppendOutput = { data: { id: string } }["data"]
+
 export type SessionShellInput = {
   readonly sessionID: { readonly sessionID: string }["sessionID"]
   readonly id?: { readonly id?: string | undefined; readonly command: string }["id"]

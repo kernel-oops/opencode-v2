@@ -5,6 +5,7 @@ import type { Agent } from "@opencode/schema/agent"
 import type { Model } from "@opencode/schema/model"
 import type { Permission } from "@opencode/schema/permission"
 import { Event } from "@opencode/schema/event"
+import { Money } from "@opencode/schema/money"
 import { FSUtil } from "@opencode/util/fs-util"
 import { Bus } from "../bus.js"
 import { Database } from "../database/database.js"
@@ -306,6 +307,59 @@ export const make = Effect.fn("Session.make")(function* () {
         }),
       ),
   )
+  // Publishes the same durable Step/Text events a model turn would, but skips the runner and
+  // execution claim entirely: no active flag, no token/cost accrual beyond the zeros we pass.
+  // Growing a single text part across calls (rather than one message per chunk) is what the
+  // Assistant content-array model is already built for, so this stays a thin event-sourcing shim.
+  const append = Effect.fn("Session.append")(function* (
+    sessionID: SessionSchema.ID,
+    input: {
+      id?: SessionMessage.ID
+      text: string
+      final?: boolean
+      agent?: Agent.ID
+      model?: Model.Ref
+      metadata?: Record<string, unknown>
+    },
+  ) {
+    const session = yield* get(sessionID)
+    const continuationID = input.id
+    const found = continuationID ? yield* message(sessionID, continuationID) : undefined
+    if (continuationID && found?.type !== "assistant")
+      return yield* new MessageNotFoundError({ sessionID, messageID: continuationID })
+    const existing = found?.type === "assistant" ? found : undefined
+    const assistantMessageID = existing?.id ?? continuationID ?? SessionMessage.ID.create()
+    if (!existing) {
+      const agent = input.agent ?? session.agent
+      const model = input.model ?? session.model
+      if (!agent || !model)
+        return yield* Effect.die(
+          new Error(`Session.append requires agent/model: session ${sessionID} has neither selected`),
+        )
+      yield* bus.publish(
+        SessionEvent.Step.Started,
+        { sessionID, assistantMessageID, agent, model, started: Date.now() },
+        { metadata: input.metadata },
+      )
+      yield* bus.publish(SessionEvent.Text.Started, { sessionID, assistantMessageID, ordinal: 0 })
+    }
+    const previous = existing?.content.findLast((part) => part.type === "text")?.text ?? ""
+    yield* bus.publish(SessionEvent.Text.Ended, {
+      sessionID,
+      assistantMessageID,
+      ordinal: 0,
+      text: previous + input.text,
+    })
+    if (input.final)
+      yield* bus.publish(SessionEvent.Step.Ended, {
+        sessionID,
+        assistantMessageID,
+        finish: "stop",
+        cost: Money.USD.make(0),
+        tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+      })
+    return { id: assistantMessageID }
+  })
   const interrupt = Effect.fn("Session.interrupt")(
     (sessionID: SessionSchema.ID, options?: { readonly resume?: boolean }) =>
       Effect.uninterruptible(execution.interrupt(sessionID, options)),
@@ -348,6 +402,7 @@ export const make = Effect.fn("Session.make")(function* () {
     inbox,
     prompt,
     synthetic,
+    append,
     shell,
     skill,
     compact,
@@ -371,6 +426,7 @@ export const make = Effect.fn("Session.make")(function* () {
     const inbox = operations.inbox.bind(undefined, sessionID)
     const prompt = operations.prompt.bind(undefined, sessionID)
     const synthetic = operations.synthetic.bind(undefined, sessionID)
+    const append = operations.append.bind(undefined, sessionID)
     const shell = operations.shell.bind(undefined, sessionID)
     const skill = operations.skill.bind(undefined, sessionID)
     const compact = operations.compact.bind(undefined, sessionID)
@@ -397,6 +453,7 @@ export const make = Effect.fn("Session.make")(function* () {
       inbox,
       prompt,
       synthetic,
+      append,
       shell,
       skill,
       compact,
