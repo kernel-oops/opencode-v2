@@ -3196,8 +3196,8 @@ function Subagent(props: ToolProps) {
 
   return (
     <InlineTool
-      icon={continuation() ? "↳" : isRunning() ? "│" : props.part.state.status === "completed" ? "✓" : "│"}
-      spinner={!continuation() && isRunning()}
+      icon={isRunning() ? "│" : props.part.state.status === "completed" ? "✓" : continuation() ? "↳" : "│"}
+      spinner={isRunning()}
       running={isRunning()}
       complete={description()}
       pending="Delegating…"
