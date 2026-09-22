@@ -405,6 +405,16 @@ function normalizeExperimental(
     if (!isRecord(input.experimental)) invalid(["experimental"], diagnostics)
     if (isRecord(input.experimental)) {
       const experimental = input.experimental
+      for (const key of ["task_continuation_agents", "task_continuation_eligible"] as const) {
+        if (!own(experimental, key)) continue
+        const value = decodeEncoded(
+          ConfigExperimental.Info.fields[key],
+          experimental[key],
+          ["experimental", key],
+          diagnostics,
+        )
+        if (value !== undefined) result[key] = value
+      }
       unsupportedExperimental.forEach((key) =>
         unsupportedIfPresent(experimental, key, ["experimental", key], diagnostics),
       )

@@ -49,6 +49,26 @@ function withoutEmptyCompatibilityContainers(input: Record<string, unknown>) {
 }
 
 describe("ConfigNormalize", () => {
+  test("preserves continuation fields in fields-only documents", () => {
+    for (const key of ["task_continuation_agents", "task_continuation_eligible"]) {
+      for (const value of [["build", "God"], []]) {
+        const input = { experimental: { [key]: value } }
+        expect(normalized(input).diagnostics).toEqual([])
+        expect(decoded(input).experimental).toEqual(input.experimental)
+      }
+    }
+  })
+
+  test("omits invalid continuation fields with schema diagnostics, preserving valid siblings", () => {
+    for (const key of ["task_continuation_agents", "task_continuation_eligible"]) {
+      for (const value of [null, true, 1, "build,God", {}, ["build", 1]]) {
+        const result = normalized({ experimental: { [key]: value, subagent_depth: 2 } })
+        expect(result.encoded.experimental).toEqual({ subagent_depth: 2 })
+        expect(result.diagnostics).toMatchObject([{ kind: "invalid", path: ["experimental", key] }])
+      }
+    }
+  })
+
   test("rejects every non-object root with one root diagnostic", () => {
     for (const input of [null, [], "config", true, 1]) {
       expect(ConfigNormalize.normalize(input)).toEqual({
