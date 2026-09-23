@@ -193,6 +193,7 @@ export type SessionCreateInput = {
   readonly agent?: Agent.ID | undefined
   readonly model?: Model.Ref | undefined
   readonly location?: Location.PublicRef | undefined
+  readonly parentID?: Session.ID | undefined
   readonly metadata?: Session.Metadata | undefined
   readonly permissions?: Permission.Ruleset | undefined
 }

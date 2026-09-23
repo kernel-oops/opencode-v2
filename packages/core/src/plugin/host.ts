@@ -524,8 +524,13 @@ export const make = Effect.fn("PluginHost.make")(function* (
           model: input?.model,
           metadata: input?.metadata,
           permissions: input?.permissions,
-          location:
-            input?.location ?? Location.Ref.make({ directory: location.directory, workspaceID: location.workspaceID }),
+          ...(input?.parentID
+            ? { parentID: input.parentID }
+            : {
+                location:
+                  input?.location ??
+                  Location.Ref.make({ directory: location.directory, workspaceID: location.workspaceID }),
+              }),
         }),
       get: (input) => sessions.get(input.sessionID),
       switchAgent: sessions.switchAgent,

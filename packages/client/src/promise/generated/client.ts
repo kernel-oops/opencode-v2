@@ -565,6 +565,7 @@ export function make(options: ClientOptions) {
               agent: input?.["agent"],
               model: input?.["model"],
               location: input?.["location"],
+              parentID: input?.["parentID"],
               metadata: input?.["metadata"],
               permissions: input?.["permissions"],
             },

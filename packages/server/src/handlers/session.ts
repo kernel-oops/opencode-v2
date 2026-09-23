@@ -135,7 +135,10 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
                 model: ctx.payload.model,
                 metadata: ctx.payload.metadata,
                 permissions: ctx.payload.permissions,
-                location: ctx.payload.location ?? { directory: AbsolutePath.make(process.cwd()) },
+                // A child session takes its parent's location, so the two are mutually exclusive.
+                ...(ctx.payload.parentID
+                  ? { parentID: ctx.payload.parentID }
+                  : { location: ctx.payload.location ?? { directory: AbsolutePath.make(process.cwd()) } }),
               })
               .pipe(Effect.orDie),
           }
