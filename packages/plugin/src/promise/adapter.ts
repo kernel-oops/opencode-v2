@@ -432,6 +432,8 @@ export function fromPromise(plugin: Plugin) {
             list: adaptApiMethod(McpEndpoints["mcp.list"], host.mcp.list),
             transform: transform(host.mcp),
             reload: () => run(host.mcp.reload()),
+            tools: () => run(host.mcp.tools()),
+            callTool: (input) => run(host.mcp.callTool(input)),
           },
           permission: {
             hook: (name, callback) =>

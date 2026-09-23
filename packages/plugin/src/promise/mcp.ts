@@ -2,6 +2,9 @@ import type { McpApi } from "@opencode/client/promise/api"
 import type { Mcp } from "@opencode/schema/mcp"
 import type { Transform } from "./registration.js"
 import type { DeepMutable } from "./types.js"
+import type { MCPTool, MCPToolResult } from "../effect/mcp.js"
+
+export type { MCPTool, MCPToolResult }
 
 export interface MCPEditor {
   list(): readonly [string, DeepMutable<Mcp.ServerConfig>][]
@@ -14,4 +17,10 @@ export interface MCPEditor {
 export interface MCPDomain extends Pick<McpApi, "list"> {
   readonly transform: Transform<MCPEditor>
   readonly reload: () => Promise<void>
+  readonly tools: () => Promise<ReadonlyArray<MCPTool>>
+  readonly callTool: (input: {
+    readonly server: string
+    readonly name: string
+    readonly args?: Record<string, unknown>
+  }) => Promise<MCPToolResult>
 }

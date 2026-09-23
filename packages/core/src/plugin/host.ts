@@ -381,6 +381,25 @@ export const make = Effect.fn("PluginHost.make")(function* (
         return response(mcp.servers())
       },
       reload: mcp.reload,
+      // Lets a plugin reach this location's MCP servers over OpenCode's own live connections, so
+      // sign-ins and warm server processes are shared rather than duplicated.
+      tools: () =>
+        mcp
+          .tools()
+          .pipe(
+            Effect.map((tools) =>
+              tools.map((tool) => ({
+                server: tool.server,
+                name: tool.name,
+                description: tool.description,
+                inputSchema: tool.inputSchema,
+              })),
+            ),
+          ),
+      callTool: (input) =>
+        mcp
+          .callTool({ server: input.server, name: input.name, args: input.args })
+          .pipe(Effect.mapError((error) => new Error(error.message))),
       transform: (callback) =>
         mcp.transform((editor) => {
           callback({
