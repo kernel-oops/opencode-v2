@@ -118,6 +118,12 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
     })
   })
   const providerState = (metadata: ProviderMetadata | undefined) => metadata?.[input.providerMetadataKey]
+  // A provider that runs its own tools can attach display metadata (a child session id, say) under the
+  // reserved `opencode` namespace; the runner never executes those tools, so this is its only route.
+  const hostedMetadata = (metadata: ProviderMetadata | undefined) => {
+    const value = metadata?.opencode?.metadata
+    return value && typeof value === "object" && !Array.isArray(value) ? (value as Tool.Metadata) : undefined
+  }
   const fragments = (
     name: string,
     ended: (id: string, value: string, ordinal: number, state?: Record<string, unknown>) => Effect.Effect<void>,
@@ -472,13 +478,14 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
         tool.settled = true
         const executed = event.providerExecuted === true || tool.providerExecuted
         const resultState = providerState(event.providerMetadata)
+        const metadata = hostedMetadata(event.providerMetadata)
         if (event.result.type === "error") {
           yield* bus.publish(SessionEvent.Tool.Failed, {
             sessionID: input.sessionID,
             assistantMessageID,
             id: event.id,
             error: { type: "tool.execution", message: stringify(event.result.value) },
-            ...failureSnapshot(tool),
+            ...failureSnapshot(tool, metadata),
             executed,
             resultState,
           })
@@ -489,6 +496,7 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
           assistantMessageID,
           id: event.id,
           content: hostedContent(event.result),
+          ...(metadata === undefined ? {} : { metadata }),
           executed,
           resultState,
         })
