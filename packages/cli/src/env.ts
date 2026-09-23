@@ -12,6 +12,10 @@ export const password = Config.redacted("OPENCODE_PASSWORD").pipe(
   Config.withDefault(undefined),
 )
 
+// "none" serves a foreground server without Basic auth, for a server already fronted by an access
+// proxy. Explicit opt-in: a missing password never disables auth.
+export const auth = Config.string("OPENCODE_SERVER_AUTH").pipe(Config.withDefault(undefined))
+
 export function session() {
   return Object.fromEntries(
     Object.entries(process.env).filter(
