@@ -204,23 +204,23 @@ export function TaskControls(props: { controls: TaskControlsActions }) {
       {(state) => (
         <box flexDirection="column" paddingLeft={2}>
           <Show when={state().paused}>
-            <text fg={theme.text.feedback.warning.default}>{pausedMessage(runningTasks(state()))}</text>
+            <text fg={theme.text.feedback.warning.base}>{pausedMessage(runningTasks(state()))}</text>
           </Show>
           <box flexDirection="row" gap={2}>
-            <text fg={theme.text.default} onMouseUp={() => void props.controls.all()}>
+            <text fg={theme.text.base} onMouseUp={() => void props.controls.all()}>
               Stop all work
             </text>
             <Show when={!state().paused}>
-              <text fg={theme.text.default} onMouseUp={() => void props.controls.stop()}>
+              <text fg={theme.text.base} onMouseUp={() => void props.controls.stop()}>
                 Stop response only
               </text>
             </Show>
             <Show when={state().paused}>
-              <text fg={theme.text.default} onMouseUp={() => void props.controls.resume()}>
+              <text fg={theme.text.base} onMouseUp={() => void props.controls.resume()}>
                 Resume controller
               </text>
             </Show>
-            <text fg={theme.text.subdued} onMouseUp={props.controls.tasks}>
+            <text fg={theme.text.muted} onMouseUp={props.controls.tasks}>
               Background tasks ({runningTasks(state())} running)
             </text>
           </box>

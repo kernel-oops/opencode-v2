@@ -101,6 +101,8 @@ export function host(overrides: Overrides = {}): Plugin.Context {
       list: () => Effect.die("unused mcp.list"),
       transform: () => Effect.die("unused mcp.transform"),
       reload: () => Effect.die("unused mcp.reload"),
+      tools: () => Effect.die("unused mcp.tools"),
+      callTool: () => Effect.die("unused mcp.callTool"),
     },
     permission: overrides.permission ?? {
       hook: () => Effect.die("unused permission.hook"),

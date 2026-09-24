@@ -10,19 +10,19 @@ function View(props: { context: Plugin.Context; sessionID: string }) {
   const running = createMemo(() => runningTasks(snapshot()))
 
   const dot = (status: string) => {
-    if (status === "running") return theme.text.feedback.warning.default
-    if (status === "error") return theme.text.feedback.error.default
-    if (status === "completed") return theme.text.feedback.success.default
-    return theme.text.subdued
+    if (status === "running") return theme.text.feedback.warning.base
+    if (status === "error") return theme.text.feedback.error.base
+    if (status === "completed") return theme.text.feedback.success.base
+    return theme.text.muted
   }
 
   return (
     <Show when={list().length > 0}>
       <box>
-        <text fg={theme.text.default}>
+        <text fg={theme.text.base}>
           <b>Subagents</b>
           <Show when={running() > 0}>
-            <span style={{ fg: theme.text.subdued }}> ({running()} running)</span>
+            <span style={{ fg: theme.text.muted }}> ({running()} running)</span>
           </Show>
         </text>
         <For each={list()}>
@@ -36,11 +36,11 @@ function View(props: { context: Plugin.Context; sessionID: string }) {
               <text flexShrink={0} style={{ fg: dot(task.status) }}>
                 •
               </text>
-              <text fg={theme.text.default} wrapMode="none" truncate flexGrow={1} flexShrink={1} minWidth={0}>
+              <text fg={theme.text.base} wrapMode="none" truncate flexGrow={1} flexShrink={1} minWidth={0}>
                 <b>{task.agent}</b> {task.description}
               </text>
               <text
-                fg={task.status === "error" ? theme.text.feedback.error.default : theme.text.subdued}
+                fg={task.status === "error" ? theme.text.feedback.error.base : theme.text.muted}
                 wrapMode="none"
                 flexShrink={0}
               >

@@ -171,12 +171,12 @@ it.live("refuses to start without a password unless authentication is explicitly
     expect(missing.message).toBe("Missing server password")
 
     const server = yield* ServerProcess.start<never, never>({ ...options, unauthenticated: true }, undefined, (api) =>
-      api.pipe(
-        Effect.catchIf(
-          (error) => error instanceof HttpServerError.HttpServerError && error.reason._tag === "RouteNotFound",
-          () => Effect.succeed(HttpServerResponse.raw("frontend", { contentType: "text/plain" })),
-        ),
-      ),
+      Effect.gen(function* () {
+        const request = yield* HttpServerRequest.HttpServerRequest
+        const url = new URL(request.url, "http://localhost")
+        if (url.pathname === "/api" || url.pathname.startsWith("/api/")) return yield* api
+        return HttpServerResponse.raw("frontend", { contentType: "text/plain" })
+      }),
     )
     yield* Effect.forEach(["/api/info", "/"], (pathname) =>
       Effect.gen(function* () {

@@ -109,9 +109,9 @@ function clamp(text: string) {
 }
 
 function statusColor(theme: Plugin.Context["theme"], run: RunState) {
-  if (run.status === "error") return theme.text.feedback.error.default
-  if (run.status === "completed") return theme.text.feedback.success.default
-  return theme.text.feedback.warning.default
+  if (run.status === "error") return theme.text.feedback.error.base
+  if (run.status === "completed") return theme.text.feedback.success.base
+  return theme.text.feedback.warning.base
 }
 
 function statusLabel(run: RunState) {
@@ -138,10 +138,10 @@ function TranscriptPanel(props: {
   return (
     <box flexDirection="column" flexGrow={1} minHeight={0} padding={1} gap={1}>
       <box flexDirection="row" gap={2}>
-        <text fg={theme.text.default} attributes={TextAttributes.BOLD} flexGrow={1}>
+        <text fg={theme.text.base} attributes={TextAttributes.BOLD} flexGrow={1}>
           Claude
         </text>
-        <text fg={theme.text.subdued} onMouseUp={() => props.input.close()}>
+        <text fg={theme.text.muted} onMouseUp={() => props.input.close()}>
           esc
         </text>
       </box>
@@ -155,23 +155,23 @@ function TranscriptPanel(props: {
       >
         <Show
           when={sessionRuns().length > 0}
-          fallback={<text fg={theme.text.subdued}>No delegated Claude output yet.</text>}
+          fallback={<text fg={theme.text.muted}>No delegated Claude output yet.</text>}
         >
           <box flexDirection="column" gap={1}>
             <For each={sessionRuns()}>
               {(run) => (
                 <box flexDirection="column">
                   <box flexDirection="row" gap={1}>
-                    <text fg={theme.text.default}>
+                    <text fg={theme.text.base}>
                       <b>{run.label}</b>
                     </text>
                     <text fg={statusColor(theme, run)}>{statusLabel(run)}</text>
                   </box>
-                  <text fg={theme.text.default} wrapMode="word">
+                  <text fg={theme.text.base} wrapMode="word">
                     {run.text || "…"}
                   </text>
                   <Show when={run.status === "error" && run.message}>
-                    <text fg={theme.text.feedback.error.default}>{run.message}</text>
+                    <text fg={theme.text.feedback.error.base}>{run.message}</text>
                   </Show>
                 </box>
               )}
