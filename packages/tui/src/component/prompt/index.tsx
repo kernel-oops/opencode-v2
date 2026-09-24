@@ -352,7 +352,7 @@ export function Prompt(props: PromptProps) {
 
   createEffect(() => {
     if (!input || input.isDestroyed) return
-    input.cursorColor = disabled() ? theme.background.raised.base : theme.text.default
+    input.cursorColor = disabled() ? theme.background.raised.base : theme.text.base
     if (config.cursor) input.cursorStyle = config.cursor
   })
 
@@ -1556,9 +1556,9 @@ export function Prompt(props: PromptProps) {
     },
   )
   const highlight = createMemo(() => {
-    if (muted()) return theme.border.default
+    if (muted()) return theme.border.base
     if (store.mode === "shell") return theme.text.action.primary.selected
-    return promptDisplay().agentColor ?? theme.border.default
+    return promptDisplay().agentColor ?? theme.border.base
   })
   const agentLabel = createMemo(() => (store.mode === "shell" ? "Shell" : promptDisplay().agentLabel))
   const animateMetadata = !revealedPromptMetadata.has(local)
@@ -1575,7 +1575,7 @@ export function Prompt(props: PromptProps) {
   createEffect(() => {
     if (agentLabel()) revealedPromptMetadata.add(local)
   })
-  const borderHighlight = createMemo(() => tint(theme.border.default, highlight(), agentMetaAlpha()))
+  const borderHighlight = createMemo(() => tint(theme.border.base, highlight(), agentMetaAlpha()))
   const footerInput = () => ({
     sessionID: props.sessionID,
     mode: store.mode,
@@ -1624,7 +1624,7 @@ export function Prompt(props: PromptProps) {
   })
 
   const spinnerDef = createMemo(() => {
-    const color = promptDisplay().agentColor ?? theme.border.default
+    const color = promptDisplay().agentColor ?? theme.border.base
     return {
       frames: createFrames({
         color,
@@ -1644,7 +1644,7 @@ export function Prompt(props: PromptProps) {
   })
   const maxHeight = createMemo(() => Math.max(6, Math.floor(dimensions().height / 3)))
 
-  const promptBg = createMemo(() => theme.raise(theme.background.raised.base))
+  const promptBg = createMemo(() => theme.decrease(theme.background.raised.base))
 
   return (
     <>
@@ -1697,7 +1697,7 @@ export function Prompt(props: PromptProps) {
                           when={!failed()}
                           fallback={
                             <box width="100%" height="100%" alignItems="center" justifyContent="center">
-                              <text fg={theme.text.subdued}>No preview</text>
+                              <text fg={theme.text.muted}>No preview</text>
                             </box>
                           }
                         >
@@ -1729,7 +1729,7 @@ export function Prompt(props: PromptProps) {
                       openImagePreview(visibleImageAttachments().length)
                     }}
                   >
-                    <text fg={theme.text.subdued} wrapMode="none" truncate>
+                    <text fg={theme.text.muted} wrapMode="none" truncate>
                       +{imageAttachments().length - visibleImageAttachments().length} more
                     </text>
                   </box>
@@ -1739,9 +1739,9 @@ export function Prompt(props: PromptProps) {
             <textarea
               width="100%"
               placeholder={placeholderText()}
-              placeholderColor={theme.text.subdued}
-              textColor={muted() ? theme.text.subdued : theme.text.default}
-              focusedTextColor={muted() ? theme.text.subdued : theme.text.default}
+              placeholderColor={theme.text.muted}
+              textColor={muted() ? theme.text.muted : theme.text.base}
+              focusedTextColor={muted() ? theme.text.muted : theme.text.base}
               minHeight={1}
               maxHeight={maxHeight()}
               cursorStyle={config.cursor}
@@ -1802,7 +1802,7 @@ export function Prompt(props: PromptProps) {
                 setTimeout(() => {
                   // setTimeout is a workaround and needs to be addressed properly
                   if (!input || input.isDestroyed) return
-                  input.cursorColor = disabled() ? theme.background.raised.base : theme.text.default
+                  input.cursorColor = disabled() ? theme.background.raised.base : theme.text.base
                   if (config.cursor) input.cursorStyle = config.cursor
                 }, 0)
               }}
@@ -1821,7 +1821,7 @@ export function Prompt(props: PromptProps) {
                 r.stopPropagation()
               }}
               focusedBackgroundColor="transparent"
-              cursorColor={disabled() ? theme.background.raised.base : theme.text.default}
+              cursorColor={disabled() ? theme.background.raised.base : theme.text.base}
               syntaxStyle={syntax()}
             />
             <box flexDirection="row" flexShrink={0} paddingTop={1} gap={1} justifyContent="space-between">
@@ -1888,17 +1888,17 @@ export function Prompt(props: PromptProps) {
                   <Match when={status() === "running"}>
                     <box flexDirection="row" gap={1} flexGrow={1} justifyContent="flex-start">
                       <box marginLeft={1}>
-                        <Show when={config.animations ?? true} fallback={<text fg={theme.text.subdued}>[⋯]</text>}>
+                        <Show when={config.animations ?? true} fallback={<text fg={theme.text.muted}>[⋯]</text>}>
                           <spinner color={spinnerDef().color} frames={spinnerDef().frames} interval={40} />
                         </Show>
                       </box>
                       <PromptInterruptStatus
                         armed={store.interrupt > 0}
                         animations={animationsEnabled()}
-                        text={theme.text.default}
-                        subdued={theme.text.subdued}
-                        warning={theme.text.feedback.warning.default}
-                        flash={theme.decrease(theme.text.feedback.warning.default, 2)}
+                        text={theme.text.base}
+                        subdued={theme.text.muted}
+                        warning={theme.text.feedback.warning.base}
+                        flash={theme.decrease(theme.text.feedback.warning.base, 2)}
                       />
                     </box>
                   </Match>
@@ -1907,7 +1907,7 @@ export function Prompt(props: PromptProps) {
                       <box paddingLeft={3} height={1} minHeight={0} flexShrink={1}>
                         <Spinner color={theme.hue.accent[500]}>
                           {progress()}
-                          <span style={{ fg: theme.text.subdued }}>{".".repeat(move.creatingDots())}</span>
+                          <span style={{ fg: theme.text.muted }}>{".".repeat(move.creatingDots())}</span>
                         </Spinner>
                       </box>
                     )}
@@ -1924,7 +1924,7 @@ export function Prompt(props: PromptProps) {
                       {(location) => (
                         <text
                           id="prompt.footer.location"
-                          fg={locationActions.hovered() ? theme.text.default : theme.text.subdued}
+                          fg={locationActions.hovered() ? theme.text.base : theme.text.muted}
                           wrapMode="none"
                           truncate
                           flexGrow={1}
@@ -1948,7 +1948,7 @@ export function Prompt(props: PromptProps) {
                     wrapMode="none"
                     truncate
                     flexShrink={1}
-                    fg={editorContextLabelState() === "pending" ? theme.hue.accent[500] : theme.text.subdued}
+                    fg={editorContextLabelState() === "pending" ? theme.hue.accent[500] : theme.text.muted}
                   >
                     {file()}
                   </text>

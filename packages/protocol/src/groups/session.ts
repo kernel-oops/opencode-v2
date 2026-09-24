@@ -361,6 +361,7 @@ export const makeSessionGroup = <
         params: { sessionID: Session.ID },
         payload: Schema.Struct({
           title: Schema.String.pipe(Schema.optional),
+          metadata: Session.Metadata.pipe(Schema.optional),
           permissions: Permission.Ruleset.pipe(Schema.optional),
         }),
         success: HttpApiSchema.NoContent,
