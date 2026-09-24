@@ -5,6 +5,7 @@ import { mkdir } from "node:fs/promises"
 import path from "node:path"
 import { createSignal } from "solid-js"
 import {
+  cardTask,
   emergencyStopReady,
   pausedMessage,
   publishTaskStatus,
@@ -56,6 +57,13 @@ test("badges reflect observed task status only", () => {
   expect(taskBadge(task({ status: "cancelled" }))).toBe("Cancelled")
   expect(pausedMessage(1)).toContain("1 background task ")
   expect(pausedMessage(2)).toContain("2 background tasks ")
+})
+
+test("a continued subagent's background entry belongs only to the card it describes", () => {
+  const latest = task({ description: "Convert aircraft-log extraction" })
+  expect(cardTask(latest, "Convert aircraft-log extraction")).toBe(latest)
+  expect(cardTask(latest, "Repair AN review defects")).toBeUndefined()
+  expect(cardTask(undefined, "Repair AN review defects")).toBeUndefined()
 })
 
 test("shared status store resolves background tasks per parent and child", () => {

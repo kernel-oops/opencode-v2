@@ -21,6 +21,10 @@ const [statuses, setStatuses] = createStore<Record<string, TaskControlSnapshot |
 export const taskStatus = (sessionID: string | undefined) => (sessionID ? statuses[sessionID] : undefined)
 export const taskBackground = (parentID: string | undefined, childID: string | undefined) =>
   childID ? taskStatus(parentID)?.background.find((task) => task.sessionID === childID) : undefined
+// A continued subagent reuses its session, and the parent's background entry follows the latest call on it:
+// a Subagent card owns the entry only when it is the call the entry describes.
+export const cardTask = <T extends { description?: string }>(task: T | undefined, description: string | undefined) =>
+  task && task.description === description ? task : undefined
 export const publishTaskStatus = (sessionID: string, value: TaskControlSnapshot | undefined) =>
   setStatuses(sessionID, value ? reconcile(value) : undefined)
 

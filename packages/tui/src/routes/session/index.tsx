@@ -121,7 +121,7 @@ import { SessionGroupView } from "./group-view"
 import { useEntryAnchor } from "./anchor-view"
 import { containsAnchor, createTimelineAnchors } from "./anchors"
 import { rowsAfter, rowsBefore, rowWeight } from "./mount-budget"
-import { taskBackground, taskBadge } from "../../component/task-controls"
+import { cardTask, taskBackground, taskBadge } from "../../component/task-controls"
 export { InlineToolRow } from "./message-parts"
 export { toolDisplay } from "./message-parts"
 
@@ -3067,10 +3067,11 @@ function Subagent(props: ToolProps) {
   const description = createMemo(() => stringValue(props.input.description))
   const continuation = createMemo(() => Boolean(stringValue(props.input.sessionID)))
   const model = createMemo(() => subagentModelLabel(stringValue(props.input.model), data.location.model.list()))
-  const task = createMemo(() => taskBackground(ctx.sessionID, sessionID()))
+  const task = createMemo(() => cardTask(taskBackground(ctx.sessionID, sessionID()), description()))
   const isRunning = createMemo(() => {
     const observed = task()
     if (observed) return observed.status === "running"
+    if (props.part.state.status === "completed" || props.part.state.status === "error") return false
     const id = sessionID()
     return props.part.state.status === "running" || Boolean(id && data.session.status(id) === "running")
   })
