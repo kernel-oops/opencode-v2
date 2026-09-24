@@ -25,6 +25,21 @@ export const taskBackground = (parentID: string | undefined, childID: string | u
 // a Subagent card owns the entry only when it is the call the entry describes.
 export const cardTask = <T extends { description?: string }>(task: T | undefined, description: string | undefined) =>
   task && task.description === description ? task : undefined
+/**
+ * The child session a Subagent card opens. Tool metadata carries it once reported, but a running call's
+ * progress metadata is not stored, so a TUI that reconnected mid-run has none: a continuation names its
+ * session in its input, and a new call is matched to the parent's one task with the same description.
+ */
+export const cardSession = (
+  parentID: string | undefined,
+  reported: string | undefined,
+  continued: string | undefined,
+  description: string | undefined,
+) => {
+  if (reported ?? continued) return reported ?? continued
+  const matches = taskStatus(parentID)?.background.filter((task) => task.description === description) ?? []
+  return matches.length === 1 ? matches[0].sessionID : undefined
+}
 export const publishTaskStatus = (sessionID: string, value: TaskControlSnapshot | undefined) =>
   setStatuses(sessionID, value ? reconcile(value) : undefined)
 

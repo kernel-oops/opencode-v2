@@ -121,7 +121,7 @@ import { SessionGroupView } from "./group-view"
 import { useEntryAnchor } from "./anchor-view"
 import { containsAnchor, createTimelineAnchors } from "./anchors"
 import { rowsAfter, rowsBefore, rowWeight } from "./mount-budget"
-import { cardTask, taskBackground, taskBadge } from "../../component/task-controls"
+import { cardSession, cardTask, taskBackground, taskBadge } from "../../component/task-controls"
 export { InlineToolRow } from "./message-parts"
 export { toolDisplay } from "./message-parts"
 
@@ -3063,8 +3063,15 @@ function Subagent(props: ToolProps) {
   const { navigate } = useRoute()
   const data = useData()
   const ctx = use()
-  const sessionID = createMemo(() => stringValue(props.metadata.sessionID) ?? stringValue(props.metadata.sessionId))
   const description = createMemo(() => stringValue(props.input.description))
+  const sessionID = createMemo(() =>
+    cardSession(
+      ctx.sessionID,
+      stringValue(props.metadata.sessionID) ?? stringValue(props.metadata.sessionId),
+      stringValue(props.input.sessionID),
+      description(),
+    ),
+  )
   const continuation = createMemo(() => Boolean(stringValue(props.input.sessionID)))
   const model = createMemo(() => subagentModelLabel(stringValue(props.input.model), data.location.model.list()))
   const task = createMemo(() => cardTask(taskBackground(ctx.sessionID, sessionID()), description()))

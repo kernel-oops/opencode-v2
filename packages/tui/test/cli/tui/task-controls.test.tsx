@@ -5,6 +5,7 @@ import { mkdir } from "node:fs/promises"
 import path from "node:path"
 import { createSignal } from "solid-js"
 import {
+  cardSession,
   cardTask,
   emergencyStopReady,
   pausedMessage,
@@ -64,6 +65,19 @@ test("a continued subagent's background entry belongs only to the card it descri
   expect(cardTask(latest, "Convert aircraft-log extraction")).toBe(latest)
   expect(cardTask(latest, "Repair AN review defects")).toBeUndefined()
   expect(cardTask(undefined, "Repair AN review defects")).toBeUndefined()
+})
+
+test("a subagent card finds its session when the running call's metadata is missing", () => {
+  expect(cardSession("parent-x", "ses_reported", "ses_input", "Any")).toBe("ses_reported")
+  expect(cardSession("parent-x", undefined, "ses_continued", "Any")).toBe("ses_continued")
+  publishTaskStatus("parent-x", snapshot({ background: [task({ sessionID: "ses_new", description: "Repair DV review blockers" })] }))
+  expect(cardSession("parent-x", undefined, undefined, "Repair DV review blockers")).toBe("ses_new")
+  publishTaskStatus(
+    "parent-x",
+    snapshot({ background: [task({ sessionID: "ses_a", description: "Same" }), task({ sessionID: "ses_b", description: "Same" })] }),
+  )
+  expect(cardSession("parent-x", undefined, undefined, "Same")).toBeUndefined()
+  publishTaskStatus("parent-x", undefined)
 })
 
 test("shared status store resolves background tasks per parent and child", () => {
